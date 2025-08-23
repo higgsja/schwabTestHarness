@@ -1,0 +1,192 @@
+[[1;34mINFO[m] Scanning for projects...
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m---------------< [0;36mcom.higgstx.schwab:schwab-test-harness[0;1m >---------------[m
+[[1;34mINFO[m] [1mBuilding Schwab Test Harness 1.0.0-SNAPSHOT[m
+[[1;34mINFO[m] [1m--------------------------------[ jar ]---------------------------------[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mexec-maven-plugin:3.1.0:java[m [1m(default-cli)[m @ [36mschwab-test-harness[0;1m ---[m
+10:57:51,654 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.11
+10:57:51,655 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Here is a list of configurators discovered as a service, by rank: 
+10:57:51,655 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 -   org.springframework.boot.logging.logback.RootLogLevelConfigurator
+10:57:51,655 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - They will be invoked in order until ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY is returned.
+10:57:51,655 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Constructed configurator of type class org.springframework.boot.logging.logback.RootLogLevelConfigurator
+10:57:51,658 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - org.springframework.boot.logging.logback.RootLogLevelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+10:57:51,658 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+10:57:51,659 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+10:57:51,665 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+10:57:51,665 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+10:57:51,665 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 6 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+10:57:51,665 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+10:57:51,665 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+10:57:51,665 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+10:57:51,666 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/home/omega/OneDrive/Documents/Dev/schwab/schwabProject/schwab-test-harness/target/classes/logback.xml]
+10:57:51,731 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [FILE] not referenced. Skipping further processing.
+10:57:51,731 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ROLLING_FILE]
+10:57:51,731 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.rolling.RollingFileAppender]
+10:57:51,740 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@634634175 - setting totalSizeCap to 300 MB
+10:57:51,741 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@634634175 - Archive files will be limited to [10 MB] each.
+10:57:51,750 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@634634175 - No compression will be used
+10:57:51,750 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@634634175 - Will use the pattern logs/schwab-oauth-client.%d{yyyy-MM-dd}.%i.log for the active file
+10:57:51,752 |-INFO in ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP@4f7e39cf - The date pattern is 'yyyy-MM-dd' from file name pattern 'logs/schwab-oauth-client.%d{yyyy-MM-dd}.%i.log'.
+10:57:51,752 |-INFO in ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP@4f7e39cf - Roll-over at midnight.
+10:57:51,753 |-INFO in ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP@4f7e39cf - Setting initial period to 2025-08-23T15:55:53.481Z
+10:57:51,755 |-INFO in ch.qos.logback.core.model.processor.ImplicitModelHandler - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+10:57:51,761 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[ROLLING_FILE] - Active log file name: logs/schwab-oauth-client.log
+10:57:51,761 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[ROLLING_FILE] - File property is set to [logs/schwab-oauth-client.log]
+10:57:51,761 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [DEBUG_FILE]
+10:57:51,761 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.FileAppender]
+10:57:51,761 |-INFO in ch.qos.logback.core.model.processor.ImplicitModelHandler - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+10:57:51,762 |-INFO in ch.qos.logback.core.FileAppender[DEBUG_FILE] - File property is set to [logs/schwab-debug.log]
+10:57:51,762 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC_FILE]
+10:57:51,762 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+10:57:51,763 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ROLLING_FILE] to ch.qos.logback.classic.AsyncAppender[ASYNC_FILE]
+10:57:51,763 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC_FILE] - Attaching appender named [ROLLING_FILE] to AsyncAppender.
+10:57:51,763 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC_FILE] - Setting discardingThreshold to 20
+10:57:51,764 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [com.higgstx.schwab] to INFO
+10:57:51,765 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [com.higgstx.schwab] to false
+10:57:51,765 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC_FILE] to Logger[com.higgstx.schwab]
+10:57:51,765 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [DEBUG_FILE] to Logger[com.higgstx.schwab]
+10:57:51,765 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [okhttp3] to WARN
+10:57:51,765 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [okhttp3] to false
+10:57:51,765 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [DEBUG_FILE] to Logger[okhttp3]
+10:57:51,765 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to WARN
+10:57:51,765 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC_FILE] to Logger[ROOT]
+10:57:51,765 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@2ffb9225 - End of configuration.
+10:57:51,765 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@70502b4a - Registering current configuration as safe fallback point
+10:57:51,765 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 100 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+
+╔═══════════════════════════════════════════════════════════════╗
+║                 🏛️  SCHWAB API TEST HARNESS                  ║
+║                      Professional Edition                     ║
+╚═══════════════════════════════════════════════════════════════╝
+
+10:57:51,654 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.11
+10:57:51,655 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Here is a list of configurators discovered as a service, by rank: 
+10:57:51,655 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 -   org.springframework.boot.logging.logback.RootLogLevelConfigurator
+10:57:51,655 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - They will be invoked in order until ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY is returned.
+10:57:51,655 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Constructed configurator of type class org.springframework.boot.logging.logback.RootLogLevelConfigurator
+10:57:51,658 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - org.springframework.boot.logging.logback.RootLogLevelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+10:57:51,658 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+10:57:51,659 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+10:57:51,665 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+10:57:51,665 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+10:57:51,665 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 6 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+10:57:51,665 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+10:57:51,665 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+10:57:51,665 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+10:57:51,666 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/home/omega/OneDrive/Documents/Dev/schwab/schwabProject/schwab-test-harness/target/classes/logback.xml]
+10:57:51,731 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [FILE] not referenced. Skipping further processing.
+10:57:51,731 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ROLLING_FILE]
+10:57:51,731 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.rolling.RollingFileAppender]
+10:57:51,740 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@634634175 - setting totalSizeCap to 300 MB
+10:57:51,741 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@634634175 - Archive files will be limited to [10 MB] each.
+10:57:51,750 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@634634175 - No compression will be used
+10:57:51,750 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@634634175 - Will use the pattern logs/schwab-oauth-client.%d{yyyy-MM-dd}.%i.log for the active file
+10:57:51,752 |-INFO in ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP@4f7e39cf - The date pattern is 'yyyy-MM-dd' from file name pattern 'logs/schwab-oauth-client.%d{yyyy-MM-dd}.%i.log'.
+10:57:51,752 |-INFO in ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP@4f7e39cf - Roll-over at midnight.
+10:57:51,753 |-INFO in ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP@4f7e39cf - Setting initial period to 2025-08-23T15:55:53.481Z
+10:57:51,755 |-INFO in ch.qos.logback.core.model.processor.ImplicitModelHandler - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+10:57:51,761 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[ROLLING_FILE] - Active log file name: logs/schwab-oauth-client.log
+10:57:51,761 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[ROLLING_FILE] - File property is set to [logs/schwab-oauth-client.log]
+10:57:51,761 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [DEBUG_FILE]
+10:57:51,761 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.FileAppender]
+10:57:51,761 |-INFO in ch.qos.logback.core.model.processor.ImplicitModelHandler - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+10:57:51,762 |-INFO in ch.qos.logback.core.FileAppender[DEBUG_FILE] - File property is set to [logs/schwab-debug.log]
+10:57:51,762 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC_FILE]
+10:57:51,762 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+10:57:51,763 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ROLLING_FILE] to ch.qos.logback.classic.AsyncAppender[ASYNC_FILE]
+10:57:51,763 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC_FILE] - Attaching appender named [ROLLING_FILE] to AsyncAppender.
+10:57:51,763 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC_FILE] - Setting discardingThreshold to 20
+10:57:51,764 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [com.higgstx.schwab] to INFO
+10:57:51,765 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [com.higgstx.schwab] to false
+10:57:51,765 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC_FILE] to Logger[com.higgstx.schwab]
+10:57:51,765 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [DEBUG_FILE] to Logger[com.higgstx.schwab]
+10:57:51,765 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [okhttp3] to WARN
+10:57:51,765 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [okhttp3] to false
+10:57:51,765 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [DEBUG_FILE] to Logger[okhttp3]
+10:57:51,765 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to WARN
+10:57:51,765 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC_FILE] to Logger[ROOT]
+10:57:51,765 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@2ffb9225 - End of configuration.
+10:57:51,765 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@70502b4a - Registering current configuration as safe fallback point
+10:57:51,765 |-INFO in ch.qos.logback.classic.util.ContextInitializer@6bb69848 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 100 milliseconds. ExecutionStatus=DO_NOT_INVOKE_NEXT_IF_ANY
+10:57:51,946 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC_FILE] - Worker thread will flush remaining events before exiting. 
+10:57:51,946 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC_FILE] - Queue flush finished successfully within timeout.
+10:57:51,952 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [FILE] not referenced. Skipping further processing.
+10:57:51,952 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ROLLING_FILE]
+10:57:51,952 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.rolling.RollingFileAppender]
+10:57:51,952 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@1810803685 - setting totalSizeCap to 300 MB
+10:57:51,952 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@1810803685 - Archive files will be limited to [10 MB] each.
+10:57:51,953 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@1810803685 - No compression will be used
+10:57:51,953 |-INFO in c.q.l.core.rolling.SizeAndTimeBasedRollingPolicy@1810803685 - Will use the pattern logs/schwab-oauth-client.%d{yyyy-MM-dd}.%i.log for the active file
+10:57:51,953 |-INFO in ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP@dae1e87 - The date pattern is 'yyyy-MM-dd' from file name pattern 'logs/schwab-oauth-client.%d{yyyy-MM-dd}.%i.log'.
+10:57:51,953 |-INFO in ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP@dae1e87 - Roll-over at midnight.
+10:57:51,953 |-INFO in ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP@dae1e87 - Setting initial period to 2025-08-23T15:55:53.481Z
+10:57:51,953 |-INFO in ch.qos.logback.core.model.processor.ImplicitModelHandler - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+10:57:51,954 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[ROLLING_FILE] - Active log file name: logs/schwab-oauth-client.log
+10:57:51,954 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[ROLLING_FILE] - File property is set to [logs/schwab-oauth-client.log]
+10:57:51,954 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [DEBUG_FILE]
+10:57:51,954 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.FileAppender]
+10:57:51,954 |-INFO in ch.qos.logback.core.model.processor.ImplicitModelHandler - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+10:57:51,954 |-INFO in ch.qos.logback.core.FileAppender[DEBUG_FILE] - File property is set to [logs/schwab-debug.log]
+10:57:51,954 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ASYNC_FILE]
+10:57:51,954 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.classic.AsyncAppender]
+10:57:51,954 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ROLLING_FILE] to ch.qos.logback.classic.AsyncAppender[ASYNC_FILE]
+10:57:51,954 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC_FILE] - Attaching appender named [ROLLING_FILE] to AsyncAppender.
+10:57:51,954 |-INFO in ch.qos.logback.classic.AsyncAppender[ASYNC_FILE] - Setting discardingThreshold to 20
+10:57:51,954 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [com.higgstx.schwab] to INFO
+10:57:51,955 |-INFO in ch.qos.logback.classic.jul.LevelChangePropagator@74789392 - Propagating INFO level on Logger[com.higgstx.schwab] onto the JUL framework
+10:57:51,955 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [com.higgstx.schwab] to false
+10:57:51,955 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC_FILE] to Logger[com.higgstx.schwab]
+10:57:51,955 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [DEBUG_FILE] to Logger[com.higgstx.schwab]
+10:57:51,955 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting level of logger [okhttp3] to WARN
+10:57:51,955 |-INFO in ch.qos.logback.classic.jul.LevelChangePropagator@74789392 - Propagating WARN level on Logger[okhttp3] onto the JUL framework
+10:57:51,955 |-INFO in ch.qos.logback.classic.model.processor.LoggerModelHandler - Setting additivity of logger [okhttp3] to false
+10:57:51,955 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [DEBUG_FILE] to Logger[okhttp3]
+10:57:51,955 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to WARN
+10:57:51,955 |-INFO in ch.qos.logback.classic.jul.LevelChangePropagator@74789392 - Propagating WARN level on Logger[ROOT] onto the JUL framework
+10:57:51,955 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ASYNC_FILE] to Logger[ROOT]
+10:57:51,955 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@5c5c32fe - End of configuration.
+10:57:51,955 |-INFO in org.springframework.boot.logging.logback.SpringBootJoranConfigurator@42730b13 - Registering current configuration as safe fallback point
+
+✅ Schwab Spring configuration initialized
+┌─ 🚀 INITIALIZATION ──────────────────────────────────────┐
+│ Starting Schwab API Test Harness...                     │
+│ Time: 2025-08-23 10:57:52                              │
+│ Java Version: 21.0.8                                     │
+└──────────────────────────────────────────────────────────┘
+
+┌─ ✅ CONFIGURATION LOADED ────────────────────────────────┐
+│ Client ID: y5eXVg33...                                   │
+│ Redirect URI: https://127.0.0.1                        │
+│ Status: Ready for OAuth authorization                    │
+└──────────────────────────────────────────────────────────┘
+
+
+📁 Log File Locations:
+  Directory: /home/omega/OneDrive/Documents/Dev/schwab/schwabProject/schwab-test-harness/logs
+  Application Log: /home/omega/OneDrive/Documents/Dev/schwab/schwabProject/schwab-test-harness/logs/schwab-oauth-client.log
+  Debug Log: /home/omega/OneDrive/Documents/Dev/schwab/schwabProject/schwab-test-harness/logs/schwab-debug.log
+  Archived Logs: /home/omega/OneDrive/Documents/Dev/schwab/schwabProject/schwab-test-harness/logs/schwab-oauth-client.*.log
+
+╔═ 🏛️  SCHWAB API TEST HARNESS MENU ═══════════════════════════╗
+║                                                             ║
+║ Current Status: ❌ RE-AUTH REQUIRED                         ║
+║ Operations Run: 0                                          ║
+╠═════════════════════════════════════════════════════════════╣
+║                        🔐 AUTHENTICATION                    ║
+║  1. Authorize Application & Get New Tokens                 ║
+║  2. Display Current Tokens                                 ║
+║  3. Refresh Access Token                                   ║
+╠═════════════════════════════════════════════════════════════╣
+║                         🧪 API TESTING                     ║
+║  4. Test API Endpoints                                     ║
+╠═════════════════════════════════════════════════════════════╣
+║                        ⚙️  CONFIGURATION                   ║
+║  5. View Configuration                                     ║
+║  6. Show Token Status                                      ║
+║  7. Show Token File Paths                                  ║
+║  8. Clear Token Files                                      ║
+╠═════════════════════════════════════════════════════════════╣
+║  0. 🚪 Exit Application                                     ║
+╚═════════════════════════════════════════════════════════════╝
+📝 Enter your choice: 
