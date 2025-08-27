@@ -1,0 +1,16 @@
+{
+  "access_token" : "I0.b2F1dGgyLmNkYy5zY2h3YWIuY29t.t8ILp6SmmSiZG3pBq1346WfstfFDZOKml9Ejc_6GP7U@",
+  "refresh_token" : "E4f4kmrPU10qQK3P1z1JEu0mH4N25TdbiEdHon4VKPokaonSr_-LzeZX30LGfCE9bYPyNUr200QrhWPW8JQQTBS2maG8T-xOq5CkL27FJwRfVxYqstkS8gm8p3lvCAE4jn3yroVSxjU@",
+  "scope" : "api",
+  "expires_in" : 1800,
+  "refresh_token_expires_in" : 0,
+  "token_type" : "Bearer",
+  "id_token" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NDk4NzdjMzRhNGM0OWEyYjU5NDBkOTY3NjI0OGE1N2U0YWM3NjZlZTkyZDg0Njc5NmEyNzM2MzRlNzg0YTQzIiwiYXVkIjoieTVlWFZnMzNNQk9XV3lBT2tEVHVOUkZyMzVNbDFZNXAiLCJpc3MiOiJ1cm46Ly9hcGkuc2Nod2FiYXBpLmNvbSIsImV4cCI6MTc1NjI2MjI1OCwiaWF0IjoxNzU2MjU4NjU4LCJqdGkiOiIwODJkNjViZS1iMzU5LTRhMzktYTE2ZS05MTk1ODI0MjFkYzgifQ.N2j7vXSNnAwAam7StkJCfBwRgnhwTWHI1g2vGjhUV9g",
+  "expiresAt" : "2025-08-27T02:07:39.402463966Z",
+  "refreshTokenExpiresAt" : null,
+  "issuedAt" : "2025-08-27T01:37:39.402473103Z",
+  "issuer" : null,
+  "audiences" : null,
+  "customClaims" : null,
+  "source" : "AUTHORIZATION_CODE"
+}

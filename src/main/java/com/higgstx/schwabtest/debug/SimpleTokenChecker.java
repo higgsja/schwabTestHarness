@@ -1,7 +1,7 @@
-package com.higgstx.schwab.debug;
+package com.higgstx.schwabtest.debug;
 
-import com.higgstx.schwab.model.TokenResponse;
-import com.higgstx.schwab.service.TokenManager;
+import com.higgstx.schwabapi.model.TokenResponse;
+import com.higgstx.schwabapi.service.TokenManager;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -12,7 +12,6 @@ import java.time.temporal.ChronoUnit;
 public class SimpleTokenChecker {
     
     public static void main(String[] args) {
-        
         // Handle command line arguments
         if (args.length > 0 && "--check-health".equals(args[0])) {
             checkTokenHealthOnly();
@@ -20,16 +19,16 @@ public class SimpleTokenChecker {
         }
         
         // Default: run the data collection simulation
-        System.out.println("🔄 Starting automated token validation");
+        System.out.println("Starting automated token validation");
         
         try {
             String accessToken = getValidAccessTokenForCron();
             
             if (accessToken != null) {
-                System.out.println("✅ Access token is valid - ready for API calls");
+                System.out.println("Access token is valid - ready for API calls");
                 // Here you would do your actual data collection
                 simulateDataCollection();
-                System.out.println("✅ Simulated data collection completed");
+                System.out.println("Simulated data collection completed");
             }
             
         } catch (Exception e) {
@@ -45,7 +44,7 @@ public class SimpleTokenChecker {
         TokenResponse tokens = TokenManager.loadTokens(false);
         
         if (tokens == null) {
-            System.out.println("❌ No tokens available - authorization required");
+            System.out.println("No tokens available - authorization required");
             return;
         }
         
@@ -54,11 +53,11 @@ public class SimpleTokenChecker {
             long hoursUntilExpiry = ChronoUnit.HOURS.between(Instant.now(), tokens.getExpiresAt());
             
             if (hoursUntilExpiry <= 0) {
-                System.out.println("⚠️ Access token expired");
+                System.out.println("Access token expired");
             } else if (hoursUntilExpiry <= 1) {
-                System.out.println("⚠️ Access token expires in " + hoursUntilExpiry + " hours");
+                System.out.println("Access token expires in " + hoursUntilExpiry + " hours");
             } else {
-                System.out.println("✅ Access token valid for " + hoursUntilExpiry + " hours");
+                System.out.println("Access token valid for " + hoursUntilExpiry + " hours");
             }
         }
         
@@ -67,14 +66,14 @@ public class SimpleTokenChecker {
             long daysUntilRefreshExpiry = ChronoUnit.DAYS.between(Instant.now(), tokens.getRefreshTokenExpiresAt());
             
             if (daysUntilRefreshExpiry <= 0) {
-                System.out.println("❌ Refresh token expired - manual re-authorization required");
+                System.out.println("Refresh token expired - manual re-authorization required");
             } else if (daysUntilRefreshExpiry <= 2) {
-                System.out.println("⚠️ Refresh token expires in " + daysUntilRefreshExpiry + " days - consider re-authorizing soon");
+                System.out.println("Refresh token expires in " + daysUntilRefreshExpiry + " days - consider re-authorizing soon");
             } else {
-                System.out.println("✅ Refresh token valid for " + daysUntilRefreshExpiry + " days");
+                System.out.println("Refresh token valid for " + daysUntilRefreshExpiry + " days");
             }
         } else {
-            System.out.println("❓ Refresh token expiration unknown");
+            System.out.println("Refresh token expiration unknown");
         }
     }
     
@@ -91,7 +90,7 @@ public class SimpleTokenChecker {
         
         // Check access token validity
         if (tokens.isAccessTokenValid()) {
-            System.out.println("✅ Access token is valid");
+            System.out.println("Access token is valid");
             return tokens.getAccessToken();
         }
         
@@ -108,13 +107,13 @@ public class SimpleTokenChecker {
      * Simulate data collection for testing
      */
     private static void simulateDataCollection() {
-        System.out.println("📈 Simulating quote data collection...");
+        System.out.println("Simulating quote data collection...");
         try { Thread.sleep(1000); } catch (InterruptedException e) {}
         
-        System.out.println("🕐 Simulating market hours collection...");
+        System.out.println("Simulating market hours collection...");
         try { Thread.sleep(500); } catch (InterruptedException e) {}
         
-        System.out.println("📊 Simulating data processing...");
+        System.out.println("Simulating data processing...");
         try { Thread.sleep(500); } catch (InterruptedException e) {}
     }
 }

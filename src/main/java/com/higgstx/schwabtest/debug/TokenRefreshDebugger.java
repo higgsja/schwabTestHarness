@@ -1,7 +1,7 @@
-package com.higgstx.schwab.debug;
+package com.higgstx.schwabtest.debug;
 
-import com.higgstx.schwab.model.TokenResponse;
-import com.higgstx.schwab.service.TokenManager;
+import com.higgstx.schwabapi.model.TokenResponse;
+import com.higgstx.schwabapi.service.TokenManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +18,7 @@ public class TokenRefreshDebugger {
     
     public static void main(String[] args) {
         System.out.println("=".repeat(60));
-        System.out.println("           🔧 TOKEN REFRESH DEBUGGER");
+        System.out.println("           TOKEN REFRESH DEBUGGER");
         System.out.println("=".repeat(60));
         
         debugTokenRefresh();
@@ -36,39 +36,39 @@ public class TokenRefreshDebugger {
         System.out.println();
         
         // Step 1: Check current tokens without auto-refresh
-        System.out.println("📋 STEP 1: Loading tokens without auto-refresh");
+        System.out.println("STEP 1: Loading tokens without auto-refresh");
         TokenResponse tokensNoRefresh = TokenManager.loadTokens(false);
         
         if (tokensNoRefresh == null) {
-            System.out.println("❌ No tokens found - authorization required");
+            System.out.println("No tokens found - authorization required");
             return;
         }
         
         analyzeTokenStatus(tokensNoRefresh, "BEFORE AUTO-REFRESH");
         
         // Step 2: Check tokens with auto-refresh enabled
-        System.out.println("\n📋 STEP 2: Loading tokens with auto-refresh enabled");
+        System.out.println("\nSTEP 2: Loading tokens with auto-refresh enabled");
         TokenResponse tokensWithRefresh = TokenManager.loadTokens(true);
         
         if (tokensWithRefresh == null) {
-            System.out.println("❌ Auto-refresh failed - no tokens returned");
+            System.out.println("Auto-refresh failed - no tokens returned");
             return;
         }
         
         analyzeTokenStatus(tokensWithRefresh, "AFTER AUTO-REFRESH");
         
         // Step 3: Compare results
-        System.out.println("\n📋 STEP 3: Comparing results");
+        System.out.println("\nSTEP 3: Comparing results");
         compareTokens(tokensNoRefresh, tokensWithRefresh);
         
         // Step 4: Test manual refresh if needed
         if (!tokensWithRefresh.isAccessTokenValid()) {
-            System.out.println("\n📋 STEP 4: Testing manual refresh");
+            System.out.println("\nSTEP 4: Testing manual refresh");
             testManualRefresh(tokensWithRefresh);
         }
         
         System.out.println("\n" + "=".repeat(60));
-        System.out.println("🔧 DIAGNOSTIC COMPLETE");
+        System.out.println("DIAGNOSTIC COMPLETE");
         System.out.println("=".repeat(60));
     }
     
@@ -91,21 +91,21 @@ public class TokenRefreshDebugger {
                 
                 if (secondsRemaining > 0) {
                     System.out.println("│ Time Remaining: " + formatDuration(secondsRemaining));
-                    System.out.println("│ Status: ✅ VALID");
+                    System.out.println("│ Status: VALID");
                     
                     if (secondsRemaining <= 300) { // 5 minutes
-                        System.out.println("│ ⚠️ WARNING: Expires within 5 minutes - should auto-refresh");
+                        System.out.println("│ WARNING: Expires within 5 minutes - should auto-refresh");
                     }
                 } else {
                     System.out.println("│ Time Remaining: EXPIRED (" + Math.abs(secondsRemaining) + " seconds ago)");
-                    System.out.println("│ Status: ❌ EXPIRED");
+                    System.out.println("│ Status: EXPIRED");
                 }
             } else {
                 System.out.println("│ Expires At: Not set");
-                System.out.println("│ Status: ❓ UNKNOWN");
+                System.out.println("│ Status: UNKNOWN");
             }
         } else {
-            System.out.println("│ Access Token: ❌ MISSING");
+            System.out.println("│ Access Token: MISSING");
         }
         
         // Refresh token analysis
@@ -116,15 +116,15 @@ public class TokenRefreshDebugger {
                 long refreshSecondsRemaining = tokens.getRefreshTokenExpiresAt().getEpochSecond() - now.getEpochSecond();
                 
                 if (refreshSecondsRemaining > 0) {
-                    System.out.println("│ Refresh Valid: ✅ YES (" + formatDuration(refreshSecondsRemaining) + " remaining)");
+                    System.out.println("│ Refresh Valid: YES (" + formatDuration(refreshSecondsRemaining) + " remaining)");
                 } else {
-                    System.out.println("│ Refresh Valid: ❌ EXPIRED");
+                    System.out.println("│ Refresh Valid: EXPIRED");
                 }
             } else {
-                System.out.println("│ Refresh Valid: ❓ UNKNOWN");
+                System.out.println("│ Refresh Valid: UNKNOWN");
             }
         } else {
-            System.out.println("│ Refresh Token: ❌ MISSING");
+            System.out.println("│ Refresh Token: MISSING");
         }
         
         System.out.println("└" + "─".repeat(47) + "┘");
@@ -138,13 +138,13 @@ public class TokenRefreshDebugger {
         boolean expirationChanged = !java.util.Objects.equals(before.getExpiresAt(), after.getExpiresAt());
         
         System.out.println("┌─ COMPARISON RESULTS ─────────────────────────┐");
-        System.out.println("│ Access Token Changed: " + (accessTokenChanged ? "✅ YES" : "❌ NO"));
-        System.out.println("│ Expiration Changed: " + (expirationChanged ? "✅ YES" : "❌ NO"));
+        System.out.println("│ Access Token Changed: " + (accessTokenChanged ? "YES" : "NO"));
+        System.out.println("│ Expiration Changed: " + (expirationChanged ? "YES" : "NO"));
         
         if (accessTokenChanged || expirationChanged) {
-            System.out.println("│ Result: 🔄 AUTO-REFRESH WORKED");
+            System.out.println("│ Result: AUTO-REFRESH WORKED");
         } else {
-            System.out.println("│ Result: ⚠️ NO REFRESH OCCURRED");
+            System.out.println("│ Result: NO REFRESH OCCURRED");
             
             // Analyze why refresh didn't occur
             if (before.isAccessTokenValid()) {
@@ -152,7 +152,7 @@ public class TokenRefreshDebugger {
             } else if (!before.isRefreshTokenValid()) {
                 System.out.println("│ Reason: Refresh token expired/missing");
             } else {
-                System.out.println("│ Reason: ❓ UNKNOWN - Check logs");
+                System.out.println("│ Reason: UNKNOWN - Check logs");
             }
         }
         System.out.println("└──────────────────────────────────────────────┘");
@@ -162,15 +162,15 @@ public class TokenRefreshDebugger {
      * Tests manual refresh
      */
     private static void testManualRefresh(TokenResponse currentTokens) {
-        System.out.println("🔄 Attempting manual token refresh...");
+        System.out.println("Attempting manual token refresh...");
         
         if (currentTokens.getRefreshToken() == null) {
-            System.out.println("❌ Cannot refresh: No refresh token available");
+            System.out.println("Cannot refresh: No refresh token available");
             return;
         }
         
         if (!currentTokens.isRefreshTokenValid()) {
-            System.out.println("❌ Cannot refresh: Refresh token is expired");
+            System.out.println("Cannot refresh: Refresh token is expired");
             return;
         }
         
@@ -178,13 +178,13 @@ public class TokenRefreshDebugger {
             TokenResponse refreshed = TokenManager.forceTokenRefresh();
             
             if (refreshed != null && refreshed.isAccessTokenValid()) {
-                System.out.println("✅ Manual refresh successful!");
+                System.out.println("Manual refresh successful!");
                 analyzeTokenStatus(refreshed, "AFTER MANUAL REFRESH");
             } else {
-                System.out.println("❌ Manual refresh failed");
+                System.out.println("Manual refresh failed");
             }
         } catch (Exception e) {
-            System.out.println("❌ Manual refresh error: " + e.getMessage());
+            System.out.println("Manual refresh error: " + e.getMessage());
         }
     }
     

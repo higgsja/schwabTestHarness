@@ -1,4 +1,4 @@
-package com.higgstx.schwab.util;
+package com.higgstx.schwabtest.util;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,14 +35,15 @@ public class LoggingUtil {
     }
     
     /**
-     * Show log file locations
-     */
-    public static void showLogLocations() {
-        Path logsPath = Paths.get(LOGS_DIR).toAbsolutePath();
-        System.out.println("\n📁 Log File Locations:");
-        System.out.println("  Directory: " + logsPath);
-        System.out.println("  Application Log: " + logsPath.resolve("schwab-oauth-client.log"));
-        System.out.println("  Debug Log: " + logsPath.resolve("schwab-debug.log"));
-        System.out.println("  Archived Logs: " + logsPath.resolve("schwab-oauth-client.*.log"));
-    }
+ * Show log file locations
+ */
+public static void showLogLocations() {
+    Path logsPath = Paths.get(LOGS_DIR).toAbsolutePath();
+    System.out.println("\nLog File Locations:");
+    System.out.println("  Directory: " + logsPath);
+    System.out.println("  Application Log: " + logsPath.resolve("schwab-oauth-client.log"));
+    System.out.println("  Debug Log: " + logsPath.resolve("schwab-debug.log"));
+    System.out.println("  OAuth Log: " + logsPath.resolve("oauth-operations.log"));
+    System.out.println("  HTTP Requests Log: " + logsPath.resolve("http-requests.log"));
+}
 }

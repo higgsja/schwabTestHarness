@@ -1,0 +1,36 @@
+# Schwab API Test Harness Configuration
+schwab:
+  api:
+    # Your Schwab API credentials - REPLACE WITH YOUR ACTUAL VALUES
+    appKey: "y5eXVg33MBOWWyAOkDTuNRFr35Ml1Y5p"
+    appSecret: "hy9B5A0tf7KcYE1A"
+    callbackUrl: "https://127.0.0.1"  # EXACT URI - no port allowed
+
+# Spring Boot Configuration
+spring:
+  application:
+    name: "schwab-test-harness"
+  main:
+    banner-mode: "off"                    # Disable Spring Boot banner for CLI app
+#    web-application-type: "none"          # Disable embedded web server
+    log-startup-info: false               # Reduce startup logging noise
+  
+  # Disable auto-configuration we don't need
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration
+      - org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration
+
+# Logging Configuration
+logging:
+  level:
+    com.higgstx.schwab: DEBUG             # Detailed logging for our application
+    okhttp3: INFO                         # HTTP client logging
+    org.springframework: WARN             # Reduce Spring noise
+    root: INFO
+  
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: "logs/schwab-test-harness.log"

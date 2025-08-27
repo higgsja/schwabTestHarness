@@ -1,0 +1,11 @@
+schwab:
+  api:
+    appKey: "test-client-id"
+    appSecret: "test-client-secret"
+    callbackUrl: "http://127.0.0.1"
+
+logging:
+  level:
+    com.higgstx: DEBUG
+    org.springframework: WARN
+    root: WARN

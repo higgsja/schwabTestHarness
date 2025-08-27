@@ -1,0 +1,9 @@
+# Test configuration
+schwab.api.appKey=test-client-id
+schwab.api.appSecret=test-client-secret
+schwab.api.callbackUrl=http://127.0.0.1
+
+# Logging for tests
+logging.level.com.higgstx=DEBUG
+logging.level.org.springframework=WARN
+logging.level.root=WARN
