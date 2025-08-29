@@ -28,8 +28,3 @@ logging:
     okhttp3: INFO
     org.springframework: WARN
     
-#        auth_url = https://api.schwabapi.com/v1/oauth/authorize?&client_id=y5eXVg33MBOWWyAOkDTuNRFr35Ml1Y5p&redirect_uri=http%3A%2F%2F127.0.0.1&scope=readonly
-
-https://api.schwabapi.com/v1/oauth/authorize?&client_id=y5eXVg33MBOWWyAOkDTuNRFr35Ml1Y5p&redirect_uri=https%3A%2F%2F127.0.0.1&scope=readonly
-
-#   https://api.schwabapi.com/v1/oauth/authorize?response_type=code&client_id=y5eXVg33MBOWWyAOkDTuNRFr35Ml1Y5p&redirect_uri=https%3A%2F%2F127.0.0.1%3A8182&scope=readonly

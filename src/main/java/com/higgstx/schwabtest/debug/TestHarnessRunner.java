@@ -5,119 +5,57 @@ import com.higgstx.schwabapi.model.TokenResponse;
 import com.higgstx.schwabapi.service.TokenManager;
 import com.higgstx.schwabtest.config.SchwabTestConfig;
 import com.higgstx.schwabtest.util.LoggingUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 
 import java.awt.Desktop;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Scanner;
 
 /**
  * Interactive test harness for Schwab API operations with manual-only OAuth
  */
-public class TestHarnessRunner
-{
+@SpringBootApplication
+@ComponentScan(basePackages = {"com.higgstx.schwabtest", "com.higgstx.schwabapi"})
+public class TestHarnessRunner implements CommandLineRunner {
 
     private static final Scanner scanner = new Scanner(System.in);
-    private static SchwabTestConfig testConfig;
+    private final SchwabTestConfig testConfig;
 
-    public static void main(String[] args)
-    {
+    @Autowired
+    public TestHarnessRunner(SchwabTestConfig testConfig) {
+        this.testConfig = testConfig;
+    }
+
+    public static void main(String[] args) {
         LoggingUtil.initializeLogging();
-        setupConfiguration();
+        SpringApplication.run(TestHarnessRunner.class, args);
+    }
 
+    @Override
+    public void run(String... args) throws Exception {
         System.out.println(
                 "============================================================");
         System.out.println("          SCHWAB API INTERACTIVE TEST HARNESS");
         System.out.println(
                 "============================================================");
 
+        try {
+            testConfig.validateConfig();
+        } catch (IllegalStateException e) {
+            System.err.println("Configuration validation failed: " + e.getMessage());
+            System.out.println("Please provide 'schwab.api.appKey' and 'schwab.api.appSecret' in your application.yml file.");
+            System.exit(1);
+        }
+
         showMainMenu();
     }
 
-    private static void setupConfiguration()
-    {
-        testConfig = new SchwabTestConfig();
-
-        try
-        {
-            String appKey = null;
-            String appSecret = null;
-
-            // Read from application.yml
-            String ymlPath = "src/main/resources/application.yml";
-            if (Files.exists(Paths.get(ymlPath)))
-            {
-                String content = Files.readString(Paths.get(ymlPath));
-                appKey = extractYmlValue(content, "appKey");
-                appSecret = extractYmlValue(content, "appSecret");
-            }
-            else
-            {
-                // Try from classpath
-                try (InputStream is = TestHarnessRunner.class.getClassLoader().
-                        getResourceAsStream("application.yml"))
-                {
-                    if (is != null)
-                    {
-                        String content = new String(is.readAllBytes());
-                        appKey = extractYmlValue(content, "appKey");
-                        appSecret = extractYmlValue(content, "appSecret");
-                    }
-                }
-            }
-
-            if (appKey != null && appSecret != null)
-            {
-                testConfig.setAppKey(appKey);
-                testConfig.setAppSecret(appSecret);
-                System.out.println("Configuration loaded successfully");
-            }
-            else
-            {
-                System.out.println(
-                        "WARNING: Could not load appKey/appSecret from application.yml");
-            }
-
-        }
-        catch (IOException e)
-        {
-            System.err.println("Error loading configuration: " + e.getMessage());
-        }
-    }
-
-    private static String extractYmlValue(String yamlContent, String key)
-    {
-        try
-        {
-            String[] lines = yamlContent.split("\n");
-            for (String line : lines)
-            {
-                String trimmed = line.trim();
-                if (trimmed.startsWith(key + ":"))
-                {
-                    String value = trimmed.substring(key.length() + 1).trim();
-                    if (value.startsWith("\"") && value.endsWith("\""))
-                    {
-                        value = value.substring(1, value.length() - 1);
-                    }
-                    return value;
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            // Ignore parsing errors
-        }
-        return null;
-    }
-
-    private static void showMainMenu()
-    {
-        while (true)
-        {
+    private void showMainMenu() {
+        while (true) {
             System.out.println("\n" + "=".repeat(60));
             System.out.println("MAIN MENU - Select an option:");
             System.out.println("=".repeat(60));
@@ -132,73 +70,44 @@ public class TestHarnessRunner
 
             String choice = scanner.nextLine().trim();
 
-            switch (choice)
-            {
-                case "1" ->
-                    performManualOAuth();
-                case "2" ->
-                    checkTokenStatus();
-                case "3" ->
-                    testMarketDataAPI();
-                case "4" ->
-                    tokenManagement();
-                case "5" ->
-                    showConfigurationStatus();
-                case "6" ->
-                {
+            switch (choice) {
+                case "1" -> performManualOAuth();
+                case "2" -> checkTokenStatus();
+                case "3" -> testMarketDataAPI();
+                case "4" -> tokenManagement();
+                case "5" -> showConfigurationStatus();
+                case "6" -> {
                     System.out.println("Exiting test harness. Goodbye!");
                     System.exit(0);
                 }
-                default ->
-                    System.out.println("Invalid choice. Please enter 1-6.");
+                default -> System.out.println("Invalid choice. Please enter 1-6.");
             }
         }
     }
 
-    private static void performManualOAuth()
-    {
+    private void performManualOAuth() {
         System.out.println("\n--- Manual OAuth Authorization ---");
 
-        // Validate configuration
-        if (testConfig == null || !testConfig.isValid())
-        {
-            System.out.println(
-                    "ERROR: Invalid configuration - missing appKey or appSecret");
-            System.out.println("Please check your application.yml file");
-            return;
-        }
-
         System.out.println("App Key: " + maskValue(testConfig.getAppKey()));
-        System.out.println(
-                "Redirect URI: https://127.0.0.1:8182 (must be configured in Schwab Developer Portal)");
-        System.out.println(
-                "\nThis process requires manual URL copying due to HTTPS certificate requirements.");
+        System.out.println("Redirect URI: https://127.0.0.1:8182 (must be configured in Schwab Developer Portal)");
+        System.out.println("\nThis process requires manual URL copying due to HTTPS certificate requirements.");
 
         System.out.print("\nProceed with manual OAuth authorization? (y/n): ");
-        if (!scanner.nextLine().trim().toLowerCase().startsWith("y"))
-        {
+        if (!scanner.nextLine().trim().toLowerCase().startsWith("y")) {
             return;
         }
 
-        try (SchwabOAuthClient client = new SchwabOAuthClient())
-        {
-
-            // Build authorization URL
-            String authUrl = client.
-                    buildAuthorizationUrl(testConfig.getAppKey(), null);
+        try (SchwabOAuthClient client = new SchwabOAuthClient()) {
+            String authUrl = client.buildAuthorizationUrl(testConfig.getAppKey(), null);
 
             System.out.println("\n" + "=".repeat(60));
             System.out.println("STEP 1: Browser Authorization");
             System.out.println("=".repeat(60));
             System.out.println("Opening Schwab authorization page...");
 
-            // Open browser
-            if (Desktop.isDesktopSupported())
-            {
+            if (Desktop.isDesktopSupported()) {
                 Desktop.getDesktop().browse(URI.create(authUrl));
-            }
-            else
-            {
+            } else {
                 System.out.println("Could not open browser automatically.");
                 System.out.println("Please manually open this URL:");
                 System.out.println(authUrl);
@@ -207,12 +116,9 @@ public class TestHarnessRunner
             System.out.println("\nInstructions:");
             System.out.println("1. Log into your Schwab account in the browser");
             System.out.println("2. Review and approve the API permissions");
-            System.out.println(
-                    "3. Schwab will redirect to: https://127.0.0.1:8182/?code=...");
-            System.out.println(
-                    "4. Browser will show 'connection refused' - this is expected!");
-            System.out.println(
-                    "5. Copy the COMPLETE URL from your browser's address bar");
+            System.out.println("3. Schwab will redirect to: https://127.0.0.1:8182/?code=...");
+            System.out.println("4. Browser will show 'connection refused' - this is expected!");
+            System.out.println("5. Copy the COMPLETE URL from your browser's address bar");
 
             System.out.println("\n" + "=".repeat(60));
             System.out.println("STEP 2: Paste Redirect URL");
@@ -221,32 +127,25 @@ public class TestHarnessRunner
 
             String redirectUrl = scanner.nextLine().trim();
 
-            if (redirectUrl.isEmpty())
-            {
+            if (redirectUrl.isEmpty()) {
                 System.out.println("ERROR: No URL provided");
                 return;
             }
 
-            if (!redirectUrl.contains("code="))
-            {
-                System.out.println(
-                        "ERROR: URL does not contain authorization code");
+            if (!redirectUrl.contains("code=")) {
+                System.out.println("ERROR: URL does not contain authorization code");
                 System.out.println("Make sure you copied the complete URL");
                 return;
             }
 
-            if (redirectUrl.contains("error="))
-            {
-                System.out.println(
-                        "ERROR: Authorization failed - URL contains error");
+            if (redirectUrl.contains("error=")) {
+                System.out.println("ERROR: Authorization failed - URL contains error");
                 return;
             }
 
-            // Extract authorization code
             String authCode = client.extractAuthorizationCode(redirectUrl);
             System.out.println("Authorization code extracted successfully!");
 
-            // Exchange for tokens
             System.out.println("Exchanging authorization code for tokens...");
             TokenResponse tokens = client.getTokens(
                     testConfig.getAppKey(),
@@ -255,20 +154,15 @@ public class TestHarnessRunner
                     null
             );
 
-            // Save tokens
             TokenManager.saveTokens(tokens);
 
             System.out.println("\nSUCCESS! Tokens acquired and saved.");
             System.out.println("You can now use the API endpoints (option 3).");
 
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             System.err.println("OAuth authorization failed: " + e.getMessage());
-            if (e.getMessage().contains("expired"))
-            {
-                System.out.println(
-                        "The authorization code expired. Please try again faster.");
+            if (e.getMessage().contains("expired")) {
+                System.out.println("The authorization code expired. Please try again faster.");
             }
         }
 
@@ -276,57 +170,42 @@ public class TestHarnessRunner
         scanner.nextLine();
     }
 
-    private static void checkTokenStatus()
-    {
+    private void checkTokenStatus() {
         System.out.println("\n--- Token Status ---");
-
-        try
-        {
+        try {
             TokenManager tokenManager = new TokenManager();
             tokenManager.showTokenStatus();
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             System.err.println("Error checking token status: " + e.getMessage());
         }
-
         System.out.print("\nPress Enter to continue...");
         scanner.nextLine();
     }
 
-    private static void testMarketDataAPI()
-    {
+    private void testMarketDataAPI() {
         System.out.println("\n--- Market Data API Test ---");
-
-        if (!TokenManager.hasValidTokens())
-        {
-            System.out.println(
-                    "No valid tokens found. Please complete OAuth authorization first (option 1).");
+        if (!TokenManager.hasValidTokens()) {
+            System.out.println("No valid tokens found. Please complete OAuth authorization first (option 1).");
             System.out.print("Press Enter to continue...");
             scanner.nextLine();
             return;
         }
 
-        System.out.println(
-                "Enter stock symbols to get quotes (comma separated, e.g., AAPL,MSFT,GOOGL):");
+        System.out.println("Enter stock symbols to get quotes (comma separated, e.g., AAPL,MSFT,GOOGL):");
         System.out.print("Symbols: ");
         String input = scanner.nextLine().trim();
 
-        if (input.isEmpty())
-        {
-            input = "AAPL"; // Default
+        if (input.isEmpty()) {
+            input = "AAPL";
         }
 
         String[] symbols = input.split(",");
-        for (int i = 0; i < symbols.length; i++)
-        {
+        for (int i = 0; i < symbols.length; i++) {
             symbols[i] = symbols[i].trim().toUpperCase();
         }
 
-        try (SchwabOAuthClient client = new SchwabOAuthClient())
-        {
+        try (SchwabOAuthClient client = new SchwabOAuthClient()) {
             String accessToken = TokenManager.getValidAccessToken();
-
             System.out.println("\nRetrieving quotes...");
             var response = client.getQuotes(symbols, accessToken);
 
@@ -334,9 +213,7 @@ public class TestHarnessRunner
             System.out.println("Response Body:");
             System.out.println(response.getBody());
 
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             System.err.println("API test failed: " + e.getMessage());
         }
 
@@ -344,8 +221,7 @@ public class TestHarnessRunner
         scanner.nextLine();
     }
 
-    private static void tokenManagement()
-    {
+    private void tokenManagement() {
         System.out.println("\n--- Token Management ---");
         System.out.println("1. Refresh tokens");
         System.out.println("2. Clear all tokens");
@@ -355,86 +231,58 @@ public class TestHarnessRunner
         System.out.print("Enter your choice (1-4): ");
         String choice = scanner.nextLine().trim();
 
-        switch (choice)
-        {
-            case "1" ->
-            {
-                try
-                {
+        switch (choice) {
+            case "1" -> {
+                try {
                     System.out.println("Refreshing tokens...");
-                    // Create TokenManager with credentials for refresh
                     TokenManager tokenManager = new TokenManager(
                             "schwab-api.json", "schwab-refresh-token.txt",
                             testConfig.getAppKey(), testConfig.getAppSecret());
-                    TokenResponse refreshed = tokenManager.
-                            forceTokenRefreshInstance();
+                    TokenResponse refreshed = tokenManager.forceTokenRefreshInstance();
                     System.out.println("Tokens refreshed successfully!");
-                    System.out.println("New token status: " + refreshed.
-                            getQuickStatus());
-                }
-                catch (Exception e)
-                {
-                    System.err.
-                            println("Token refresh failed: " + e.getMessage());
+                    System.out.println("New token status: " + refreshed.getQuickStatus());
+                } catch (Exception e) {
+                    System.err.println("Token refresh failed: " + e.getMessage());
                 }
             }
-            case "2" ->
-            {
-                System.out.print(
-                        "Are you sure you want to clear all tokens? (y/n): ");
-                if (scanner.nextLine().trim().toLowerCase().startsWith("y"))
-                {
+            case "2" -> {
+                System.out.print("Are you sure you want to clear all tokens? (y/n): ");
+                if (scanner.nextLine().trim().toLowerCase().startsWith("y")) {
                     TokenManager tokenManager = new TokenManager();
                     tokenManager.clearTokenFiles();
                 }
             }
-            case "3" ->
-                TokenManager.showTokenFilePaths();
-            case "4" ->
-            {
+            case "3" -> TokenManager.showTokenFilePaths();
+            case "4" -> {
                 return;
             }
-            default ->
-                System.out.println("Invalid choice.");
+            default -> System.out.println("Invalid choice.");
         }
-
         System.out.print("\nPress Enter to continue...");
         scanner.nextLine();
     }
 
-    private static void showConfigurationStatus()
-    {
+    private void showConfigurationStatus() {
         System.out.println("\n--- Configuration Status ---");
-        if (testConfig != null)
-        {
+        if (testConfig != null) {
             testConfig.showConfig();
-
-            try
-            {
+            try {
                 testConfig.validateConfig();
                 System.out.println("Configuration: VALID");
-            }
-            catch (IllegalStateException e)
-            {
+            } catch (IllegalStateException e) {
                 System.out.println("Configuration: INVALID - " + e.getMessage());
             }
-        }
-        else
-        {
+        } else {
             System.out.println("Configuration not loaded");
         }
-
         System.out.print("\nPress Enter to continue...");
         scanner.nextLine();
     }
 
-    private static String maskValue(String value)
-    {
-        if (value == null || value.length() <= 8)
-        {
+    private static String maskValue(String value) {
+        if (value == null || value.length() <= 8) {
             return "****";
         }
-        return value.substring(0, 4) + "****" + value.substring(
-                value.length() - 4);
+        return value.substring(0, 4) + "****" + value.substring(value.length() - 4);
     }
 }

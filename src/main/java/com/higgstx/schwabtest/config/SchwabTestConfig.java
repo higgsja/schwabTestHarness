@@ -1,12 +1,16 @@
 package com.higgstx.schwabtest.config;
 
-import lombok.*;
-import org.springframework.boot.context.properties.*;
-import org.springframework.stereotype.*;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+import jakarta.annotation.PostConstruct;
 
+/**
+ * Configuration properties for the Schwab API.
+ * This class is managed by Spring Boot's dependency injection container
+ * to automatically bind properties from application.yml.
+ */
 @Component
 @ConfigurationProperties(prefix = "schwab.api")
-@Data
 public class SchwabTestConfig {
     
     private String appKey;
@@ -19,9 +23,16 @@ public class SchwabTestConfig {
                appSecret != null && !appSecret.trim().isEmpty();
     }
     
+    @PostConstruct
+    public void validateOnStartup() {
+        validateConfig();
+    }
+    
     public void validateConfig() {
         if (!isValid()) {
-            throw new IllegalStateException("Schwab API configuration incomplete");
+            throw new IllegalStateException("Schwab API configuration incomplete. " +
+                    "Please ensure 'schwab.api.appKey' and 'schwab.api.appSecret' are " +
+                    "set in your application.yml file.");
         }
     }
     
@@ -29,10 +40,14 @@ public class SchwabTestConfig {
         System.out.println("=== Schwab Test Configuration ===");
         System.out.println("App Key: " + maskValue(appKey));
         System.out.println("App Secret: " + maskValue(appSecret));
+        System.out.println("Token Properties File: " + tokenPropertiesFile);
+        System.out.println("Refresh Token File: " + refreshTokenFile);
     }
     
     private String maskValue(String value) {
-        if (value == null || value.length() <= 8) return "****";
+        if (value == null || value.length() <= 8) {
+            return "****";
+        }
         return value.substring(0, 4) + "****" + value.substring(value.length() - 4);
     }
 
