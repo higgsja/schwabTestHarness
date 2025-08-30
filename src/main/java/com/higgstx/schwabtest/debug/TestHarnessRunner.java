@@ -1,10 +1,13 @@
+// src/main/java/com/higgstx/schwabtest/debug/TestHarnessRunner.java
 package com.higgstx.schwabtest.debug;
 
 import com.higgstx.schwabapi.config.SchwabOAuthClient;
+import com.higgstx.schwabapi.exception.*;
 import com.higgstx.schwabapi.model.TokenResponse;
 import com.higgstx.schwabapi.service.TokenManager;
 import com.higgstx.schwabtest.config.SchwabTestConfig;
 import com.higgstx.schwabtest.util.LoggingUtil;
+import com.higgstx.schwabtest.ui.UserInterface; // Import the new interface
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -13,140 +16,171 @@ import org.springframework.context.annotation.ComponentScan;
 
 import java.awt.Desktop;
 import java.net.URI;
-import java.util.Scanner;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * Interactive test harness for Schwab API operations with manual-only OAuth
  */
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.higgstx.schwabtest", "com.higgstx.schwabapi"})
-public class TestHarnessRunner implements CommandLineRunner {
+@ComponentScan(basePackages =
+{
+    "com.higgstx.schwabtest", "com.higgstx.schwabapi"
+})
+public class TestHarnessRunner implements CommandLineRunner
+{
 
-    private static final Scanner scanner = new Scanner(System.in);
+    // Removed the static Scanner, as it's now handled by ConsoleIOUserInterface
     private final SchwabTestConfig testConfig;
+    private final UserInterface ui; // Inject the user interface
 
     @Autowired
-    public TestHarnessRunner(SchwabTestConfig testConfig) {
+    public TestHarnessRunner(SchwabTestConfig testConfig, UserInterface ui)
+    {
         this.testConfig = testConfig;
+        this.ui = ui; // Initialize the user interface
     }
 
-    public static void main(String[] args) {
-        LoggingUtil.initializeLogging();
+    public static void main(String[] args)
+    {
+        LoggingUtil.initializeLogging(); // Assuming this sets up Logback
         SpringApplication.run(TestHarnessRunner.class, args);
     }
 
     @Override
-    public void run(String... args) throws Exception {
-        System.out.println(
-                "============================================================");
-        System.out.println("          SCHWAB API INTERACTIVE TEST HARNESS");
-        System.out.println(
-                "============================================================");
+    public void run(String... args) throws Exception
+    {
+        ui.displayHeader("SCHWAB API INTERACTIVE TEST HARNESS");
 
-        try {
+        try
+        {
             testConfig.validateConfig();
-        } catch (IllegalStateException e) {
-            System.err.println("Configuration validation failed: " + e.getMessage());
-            System.out.println("Please provide 'schwab.api.appKey' and 'schwab.api.appSecret' in your application.yml file.");
-            System.exit(1);
+        }
+        catch (IllegalStateException e)
+        {
+            ui.
+                    displayError("Configuration validation failed: " + e.
+                            getMessage());
+            ui.displayMessage(
+                    "Please provide 'schwab.api.appKey' and 'schwab.api.appSecret' in your application.yml file.");
+            ui.exit(1);
         }
 
         showMainMenu();
     }
 
-    private void showMainMenu() {
-        while (true) {
-            System.out.println("\n" + "=".repeat(60));
-            System.out.println("MAIN MENU - Select an option:");
-            System.out.println("=".repeat(60));
-            System.out.println("1. Manual OAuth Authorization");
-            System.out.println("2. Check Token Status");
-            System.out.println("3. Test Market Data API");
-            System.out.println("4. Token Management");
-            System.out.println("5. Configuration Status");
-            System.out.println("6. Exit");
-            System.out.println("=".repeat(60));
-            System.out.print("Enter your choice (1-6): ");
+    private void showMainMenu()
+    {
+        while (true)
+        {
+            ui.displaySeparator(60);
+            ui.displayMessage("MAIN MENU - Select an option:");
+            ui.displaySeparator(60);
+            ui.displayMessage("1. Manual OAuth Authorization");
+            ui.displayMessage("2. Check Token Status");
+            ui.displayMessage("3. Test Market Data API");
+            ui.displayMessage("4. Token Management");
+            ui.displayMessage("5. Configuration Status");
+            ui.displayMessage("6. Exit");
+            ui.displaySeparator(60);
+            String choice = ui.getUserInput("Enter your choice (1-6): ");
 
-            String choice = scanner.nextLine().trim();
-
-            switch (choice) {
-                case "1" -> performManualOAuth();
-                case "2" -> checkTokenStatus();
-                case "3" -> testMarketDataAPI();
-                case "4" -> tokenManagement();
-                case "5" -> showConfigurationStatus();
-                case "6" -> {
-                    System.out.println("Exiting test harness. Goodbye!");
-                    System.exit(0);
+            switch (choice)
+            {
+                case "1" ->
+                    performManualOAuth();
+                case "2" ->
+                    checkTokenStatus();
+                case "3" ->
+                    testMarketDataAPI();
+                case "4" ->
+                    tokenManagement();
+                case "5" ->
+                    showConfigurationStatus();
+                case "6" ->
+                {
+                    ui.displayMessage("Exiting test harness. Goodbye!");
+                    ui.exit(0);
                 }
-                default -> System.out.println("Invalid choice. Please enter 1-6.");
+                default ->
+                    ui.displayMessage("Invalid choice. Please enter 1-6.");
             }
         }
     }
 
-    private void performManualOAuth() {
-        System.out.println("\n--- Manual OAuth Authorization ---");
+    private void performManualOAuth()
+    {
+        ui.displaySubHeader("Manual OAuth Authorization");
 
-        System.out.println("App Key: " + maskValue(testConfig.getAppKey()));
-        System.out.println("Redirect URI: https://127.0.0.1:8182 (must be configured in Schwab Developer Portal)");
-        System.out.println("\nThis process requires manual URL copying due to HTTPS certificate requirements.");
+        ui.displayMessage("App Key: " + maskValue(testConfig.getAppKey()));
+        ui.displayMessage(
+                "Redirect URI: https://127.0.0.1:8182 (must be configured in Schwab Developer Portal)");
+        ui.displayMessage(
+                "\nThis process requires manual URL copying due to HTTPS certificate requirements.");
 
-        System.out.print("\nProceed with manual OAuth authorization? (y/n): ");
-        if (!scanner.nextLine().trim().toLowerCase().startsWith("y")) {
+        String proceed = ui.getUserInput(
+                "\nProceed with manual OAuth authorization? (y/n): ");
+        if (!proceed.toLowerCase().startsWith("y"))
+        {
             return;
         }
 
-        try (SchwabOAuthClient client = new SchwabOAuthClient()) {
-            String authUrl = client.buildAuthorizationUrl(testConfig.getAppKey(), null);
+        try (SchwabOAuthClient client = new SchwabOAuthClient())
+        {
+            String authUrl = client.
+                    buildAuthorizationUrl(testConfig.getAppKey(), null);
 
-            System.out.println("\n" + "=".repeat(60));
-            System.out.println("STEP 1: Browser Authorization");
-            System.out.println("=".repeat(60));
-            System.out.println("Opening Schwab authorization page...");
+            ui.displayHeader("STEP 1: Browser Authorization");
+            ui.displayMessage("Opening Schwab authorization page...");
 
-            if (Desktop.isDesktopSupported()) {
+            if (Desktop.isDesktopSupported())
+            {
                 Desktop.getDesktop().browse(URI.create(authUrl));
-            } else {
-                System.out.println("Could not open browser automatically.");
-                System.out.println("Please manually open this URL:");
-                System.out.println(authUrl);
+            }
+            else
+            {
+                ui.displayMessage("Could not open browser automatically.");
+                ui.displayMessage("Please manually open this URL:");
+                ui.displayMessage(authUrl);
             }
 
-            System.out.println("\nInstructions:");
-            System.out.println("1. Log into your Schwab account in the browser");
-            System.out.println("2. Review and approve the API permissions");
-            System.out.println("3. Schwab will redirect to: https://127.0.0.1:8182/?code=...");
-            System.out.println("4. Browser will show 'connection refused' - this is expected!");
-            System.out.println("5. Copy the COMPLETE URL from your browser's address bar");
+            ui.displayMessage("\nInstructions:");
+            ui.displayMessage("1. Log into your Schwab account in the browser");
+            ui.displayMessage("2. Review and approve the API permissions");
+            ui.displayMessage(
+                    "3. Schwab will redirect to: https://127.0.0.1:8182/?code=...");
+            ui.displayMessage(
+                    "4. Browser will show 'connection refused' - this is expected!");
+            ui.displayMessage(
+                    "5. Copy the COMPLETE URL from your browser's address bar");
 
-            System.out.println("\n" + "=".repeat(60));
-            System.out.println("STEP 2: Paste Redirect URL");
-            System.out.println("=".repeat(60));
-            System.out.print("Paste the full redirect URL here: ");
+            ui.displayHeader("STEP 2: Paste Redirect URL");
+            String redirectUrl = ui.getUserInput(
+                    "Paste the full redirect URL here: ");
 
-            String redirectUrl = scanner.nextLine().trim();
-
-            if (redirectUrl.isEmpty()) {
-                System.out.println("ERROR: No URL provided");
+            if (redirectUrl.isEmpty())
+            {
+                ui.displayError("No URL provided");
                 return;
             }
 
-            if (!redirectUrl.contains("code=")) {
-                System.out.println("ERROR: URL does not contain authorization code");
-                System.out.println("Make sure you copied the complete URL");
+            if (!redirectUrl.contains("code="))
+            {
+                ui.displayError("URL does not contain authorization code");
+                ui.displayMessage("Make sure you copied the complete URL");
                 return;
             }
 
-            if (redirectUrl.contains("error=")) {
-                System.out.println("ERROR: Authorization failed - URL contains error");
+            if (redirectUrl.contains("error="))
+            {
+                ui.displayError("Authorization failed - URL contains error");
                 return;
             }
 
             String authCode = client.extractAuthorizationCode(redirectUrl);
-            System.out.println("Authorization code extracted successfully!");
+            ui.displayMessage("Authorization code extracted successfully!");
 
-            System.out.println("Exchanging authorization code for tokens...");
+            ui.displayMessage("Exchanging authorization code for tokens...");
             TokenResponse tokens = client.getTokens(
                     testConfig.getAppKey(),
                     testConfig.getAppSecret(),
@@ -156,133 +190,170 @@ public class TestHarnessRunner implements CommandLineRunner {
 
             TokenManager.saveTokens(tokens);
 
-            System.out.println("\nSUCCESS! Tokens acquired and saved.");
-            System.out.println("You can now use the API endpoints (option 3).");
+            ui.displayMessage("\nSUCCESS! Tokens acquired and saved.");
+            ui.displayMessage("You can now use the API endpoints (option 3).");
 
-        } catch (Exception e) {
-            System.err.println("OAuth authorization failed: " + e.getMessage());
-            if (e.getMessage().contains("expired")) {
-                System.out.println("The authorization code expired. Please try again faster.");
+        }
+        catch (Exception e)
+        {
+            ui.displayError("OAuth authorization failed: " + e.getMessage());
+            if (e.getMessage().contains("expired"))
+            {
+                ui.displayMessage(
+                        "The authorization code expired. Please try again faster.");
             }
         }
 
-        System.out.print("\nPress Enter to continue...");
-        scanner.nextLine();
+        ui.getUserInput("\nPress Enter to continue...");
     }
 
-    private void checkTokenStatus() {
-        System.out.println("\n--- Token Status ---");
-        try {
+    private void checkTokenStatus()
+    {
+        ui.displaySubHeader("Token Status");
+        try
+        {
             TokenManager tokenManager = new TokenManager();
-            tokenManager.showTokenStatus();
-        } catch (Exception e) {
-            System.err.println("Error checking token status: " + e.getMessage());
+            tokenManager.showTokenStatus(); // This still uses System.out, needs modification in TokenManager
         }
-        System.out.print("\nPress Enter to continue...");
-        scanner.nextLine();
+        catch (Exception e)
+        {
+            ui.displayError("Error checking token status: " + e.getMessage());
+        }
+        ui.getUserInput("\nPress Enter to continue...");
     }
 
-    private void testMarketDataAPI() {
-        System.out.println("\n--- Market Data API Test ---");
-        if (!TokenManager.hasValidTokens()) {
-            System.out.println("No valid tokens found. Please complete OAuth authorization first (option 1).");
-            System.out.print("Press Enter to continue...");
-            scanner.nextLine();
+    private void testMarketDataAPI()
+    {
+        ui.displaySubHeader("Market Data API Test");
+        if (!TokenManager.hasValidTokens())
+        {
+            ui.displayMessage(
+                    "No valid tokens found. Please complete OAuth authorization first (option 1).");
+            ui.getUserInput("Press Enter to continue...");
             return;
         }
 
-        System.out.println("Enter stock symbols to get quotes (comma separated, e.g., AAPL,MSFT,GOOGL):");
-        System.out.print("Symbols: ");
-        String input = scanner.nextLine().trim();
+        ui.displayMessage(
+                "Enter stock symbols to get quotes (comma separated, e.g., AAPL,MSFT,GOOGL):");
+        String input = ui.getUserInput("Symbols: ");
 
-        if (input.isEmpty()) {
+        if (input.isEmpty())
+        {
             input = "AAPL";
         }
 
-        String[] symbols = input.split(",");
-        for (int i = 0; i < symbols.length; i++) {
-            symbols[i] = symbols[i].trim().toUpperCase();
-        }
+        String[] symbols = Arrays.stream(input.split(","))
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .collect(Collectors.toList())
+                .toArray(new String[0]);
 
-        try (SchwabOAuthClient client = new SchwabOAuthClient()) {
+        try (SchwabOAuthClient client = new SchwabOAuthClient())
+        {
             String accessToken = TokenManager.getValidAccessToken();
-            System.out.println("\nRetrieving quotes...");
+            ui.displayMessage("\nRetrieving quotes...");
             var response = client.getQuotes(symbols, accessToken);
 
-            System.out.println("\nResponse Status: " + response.getStatusCode());
-            System.out.println("Response Body:");
-            System.out.println(response.getBody());
+            ui.displayMessage("\nResponse Status: " + response.getStatusCode());
+            ui.displayMessage("Response Body:\n" + response.getBody());
 
-        } catch (Exception e) {
-            System.err.println("API test failed: " + e.getMessage());
+        }
+        catch (Exception e)
+        {
+            ui.displayError("API test failed: " + e.getMessage());
         }
 
-        System.out.print("\nPress Enter to continue...");
-        scanner.nextLine();
+        ui.getUserInput("\nPress Enter to continue...");
     }
 
-    private void tokenManagement() {
-        System.out.println("\n--- Token Management ---");
-        System.out.println("1. Refresh tokens");
-        System.out.println("2. Clear all tokens");
-        System.out.println("3. Show token files location");
-        System.out.println("4. Back to main menu");
+    private void tokenManagement()
+    {
+        ui.displaySubHeader("Token Management");
+        ui.displayMessage("1. Refresh tokens");
+        ui.displayMessage("2. Clear all tokens");
+        ui.displayMessage("3. Show token files location");
+        ui.displayMessage("4. Back to main menu");
 
-        System.out.print("Enter your choice (1-4): ");
-        String choice = scanner.nextLine().trim();
+        String choice = ui.getUserInput("Enter your choice (1-4): ");
 
-        switch (choice) {
-            case "1" -> {
-                try {
-                    System.out.println("Refreshing tokens...");
+        switch (choice)
+        {
+            case "1" ->
+            {
+                try
+                {
+                    ui.displayMessage("Refreshing tokens...");
                     TokenManager tokenManager = new TokenManager(
                             "schwab-api.json", "schwab-refresh-token.txt",
                             testConfig.getAppKey(), testConfig.getAppSecret());
-                    TokenResponse refreshed = tokenManager.forceTokenRefreshInstance();
-                    System.out.println("Tokens refreshed successfully!");
-                    System.out.println("New token status: " + refreshed.getQuickStatus());
-                } catch (Exception e) {
-                    System.err.println("Token refresh failed: " + e.getMessage());
+                    TokenResponse refreshed = tokenManager.
+                            forceTokenRefreshInstance();
+                    ui.displayMessage("Tokens refreshed successfully!");
+                    ui.displayMessage("New token status: " + refreshed.
+                            getQuickStatus());
+                }
+                catch (SchwabApiException e)
+                {
+                    ui.displayError("Token refresh failed: " + e.getMessage());
                 }
             }
-            case "2" -> {
-                System.out.print("Are you sure you want to clear all tokens? (y/n): ");
-                if (scanner.nextLine().trim().toLowerCase().startsWith("y")) {
+            case "2" ->
+            {
+                String confirm = ui.getUserInput(
+                        "Are you sure you want to clear all tokens? (y/n): ");
+                if (confirm.toLowerCase().startsWith("y"))
+                {
                     TokenManager tokenManager = new TokenManager();
-                    tokenManager.clearTokenFiles();
+                    tokenManager.clearTokenFiles(); // This still uses System.out, needs modification
+                    ui.displayMessage("Token files cleared.");
+                }
+                else
+                {
+                    ui.displayMessage("Token clearing cancelled.");
                 }
             }
-            case "3" -> TokenManager.showTokenFilePaths();
-            case "4" -> {
+            case "3" ->
+                TokenManager.showTokenFilePaths(); // This still uses System.out, needs modification
+            case "4" ->
+            {
                 return;
             }
-            default -> System.out.println("Invalid choice.");
+            default ->
+                ui.displayMessage("Invalid choice.");
         }
-        System.out.print("\nPress Enter to continue...");
-        scanner.nextLine();
+        ui.getUserInput("\nPress Enter to continue...");
     }
 
-    private void showConfigurationStatus() {
-        System.out.println("\n--- Configuration Status ---");
-        if (testConfig != null) {
-            testConfig.showConfig();
-            try {
+    private void showConfigurationStatus()
+    {
+        ui.displaySubHeader("Configuration Status");
+        if (testConfig != null)
+        {
+            testConfig.showConfig(); // This still uses System.out, needs modification in SchwabTestConfig
+            try
+            {
                 testConfig.validateConfig();
-                System.out.println("Configuration: VALID");
-            } catch (IllegalStateException e) {
-                System.out.println("Configuration: INVALID - " + e.getMessage());
+                ui.displayMessage("Configuration: VALID");
             }
-        } else {
-            System.out.println("Configuration not loaded");
+            catch (IllegalStateException e)
+            {
+                ui.displayMessage("Configuration: INVALID - " + e.getMessage());
+            }
         }
-        System.out.print("\nPress Enter to continue...");
-        scanner.nextLine();
+        else
+        {
+            ui.displayMessage("Configuration not loaded");
+        }
+        ui.getUserInput("\nPress Enter to continue...");
     }
 
-    private static String maskValue(String value) {
-        if (value == null || value.length() <= 8) {
+    private static String maskValue(String value)
+    {
+        if (value == null || value.length() <= 8)
+        {
             return "****";
         }
-        return value.substring(0, 4) + "****" + value.substring(value.length() - 4);
+        return value.substring(0, 4) + "****" + value.substring(
+                value.length() - 4);
     }
 }
