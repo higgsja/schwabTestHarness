@@ -44,7 +44,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.38</version> <!-- Use the property -->
+            <version>1.18.38</version>
             <scope>provided</scope>
         </dependency>
 
@@ -72,13 +72,13 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.higgstx.schwabtest.debug.TestHarnessRunner</mainClass>
-<!--                    <excludes>
+                    <mainClass>com.higgstx.schwabtest.SchwabTestHarnessApplication</mainClass>
+                    <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                         </exclude>
-                    </excludes>-->
+                    </excludes>
                 </configuration>
                 <executions>
                     <execution>
@@ -117,8 +117,8 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
-                <configuration> <!-- THIS BLOCK NEEDS TO BE UNCOMMENTED -->
-                    <mainClass>com.higgstx.schwabtest.debug.TestHarnessRunner</mainClass>
+                <configuration>
+                    <mainClass>com.higgstx.schwabtest.SchwabTestHarnessApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>
@@ -127,20 +127,68 @@
     <!-- Profiles for different execution modes -->
     <profiles>
         <profile>
-            <id>oauth-debugger</id>
+            <id>token-refresher</id>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <configuration>
-                            <mainClass>com.higgstx.schwabtest.debug.OAuthDebugger</mainClass>
+                            <mainClass>com.higgstx.schwabtest.debug.AutoTokenRefresherMain</mainClass>
                         </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
         </profile>
-                            
+        <profile>
+            <id>token-checker</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <configuration>
+                            <mainClass>com.higgstx.schwabtest.debug.SimpleTokenCheckerMain</mainClass>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>token-debugger</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <configuration>
+                            <mainClass>com.higgstx.schwabtest.debug.TokenRefreshDebugger</mainClass>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>log-viewer</id>
             <build>
@@ -151,6 +199,13 @@
                         <configuration>
                             <mainClass>com.higgstx.schwabtest.util.LogViewer</mainClass>
                         </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

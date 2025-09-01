@@ -2,31 +2,48 @@ package com.higgstx.schwabtest.debug;
 
 import com.higgstx.schwabapi.model.TokenResponse;
 import com.higgstx.schwabapi.service.TokenManager;
+import com.higgstx.schwabtest.config.SchwabTestConfig;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Simple token health checker for cron jobs
+ * Simple token health checker for cron jobs - now Spring-aware
  */
-public class SimpleTokenChecker {
+@SpringBootApplication(scanBasePackages = "com.higgstx.schwabtest")
+public class SimpleTokenCheckerMain {
     
     public static void main(String[] args) {
+        System.setProperty("spring.main.banner-mode", "off");
+        System.setProperty("spring.main.log-startup-info", "false");
+        
         // Handle command line arguments
         if (args.length > 0 && "--check-health".equals(args[0])) {
-            checkTokenHealthOnly();
+            checkTokenHealthOnlyStandalone();
             return;
         }
         
-        // Default: run the data collection simulation
-        System.out.println("Starting automated token validation");
+        // Default: run the data collection simulation with Spring context
+        ConfigurableApplicationContext context = SpringApplication.run(SimpleTokenCheckerMain.class, args);
         
         try {
-            String accessToken = getValidAccessTokenForCron();
+            SchwabTestConfig config = context.getBean(SchwabTestConfig.class);
+            TokenManager tokenManager = new TokenManager(
+                config.getTokenPropertiesFile(),
+                config.getRefreshTokenFile(),
+                config.getAppKey(),
+                config.getAppSecret()
+            );
+            
+            System.out.println("Starting automated token validation");
+            
+            String accessToken = getValidAccessTokenForCron(tokenManager);
             
             if (accessToken != null) {
                 System.out.println("Access token is valid - ready for API calls");
-                // Here you would do your actual data collection
                 simulateDataCollection();
                 System.out.println("Simulated data collection completed");
             }
@@ -34,13 +51,17 @@ public class SimpleTokenChecker {
         } catch (Exception e) {
             System.err.println("ERROR: " + e.getMessage());
             System.exit(1);
+        } finally {
+            context.close();
         }
+        
+        System.exit(0);
     }
     
     /**
-     * Check token health and print status
+     * Check token health without Spring context (for lightweight health checks)
      */
-    public static void checkTokenHealthOnly() {
+    public static void checkTokenHealthOnlyStandalone() {
         TokenResponse tokens = TokenManager.loadTokens(false);
         
         if (tokens == null) {
@@ -80,9 +101,9 @@ public class SimpleTokenChecker {
     /**
      * Gets a valid access token for cron job execution
      */
-    public static String getValidAccessTokenForCron() throws Exception {
+    public static String getValidAccessTokenForCron(TokenManager tokenManager) throws Exception {
         // Load tokens with auto-refresh enabled
-        TokenResponse tokens = TokenManager.loadTokens(true);
+        TokenResponse tokens = tokenManager.loadTokensInstance(true);
         
         if (tokens == null) {
             throw new Exception("No tokens found - manual authorization required");

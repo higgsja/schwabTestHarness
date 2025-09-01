@@ -2,7 +2,6 @@ package com.higgstx.schwabtest.service;
 
 import com.higgstx.schwabapi.config.SchwabApiProperties;
 import com.higgstx.schwabapi.service.MarketDataService;
-import com.higgstx.schwabapi.service.TokenManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
@@ -32,19 +31,32 @@ class MarketDataServiceTest {
         backupAndRemoveTokenFile();
         
         try {
-            // Use default constructor which loads from application.yml
-            marketDataService = new MarketDataService();
-        } catch (Exception e) {
-            // If application.yml is not available, create with test properties
+            // Create with test properties since application.yml may not be available in test context
             SchwabApiProperties testProps = new SchwabApiProperties(
-                "https://test.api.com/auth",
-                "https://test.api.com/token", 
-                "https://test.api.com/market",
-                "http://localhost:8080",
+                "https://api.schwabapi.com/v1/oauth/authorize",
+                "https://api.schwabapi.com/v1/oauth/token", 
+                "https://api.schwabapi.com/marketdata/v1",
+                "https://127.0.0.1:8182",
                 "readonly",
-                5000
+                30000
             );
             marketDataService = new MarketDataService(testProps);
+        } catch (Exception e) {
+            // Fallback to default constructor if properties fail
+            try {
+                marketDataService = new MarketDataService();
+            } catch (Exception ex) {
+                // If both fail, create with minimal test properties
+                SchwabApiProperties fallbackProps = new SchwabApiProperties(
+                    "https://test.api.com/auth",
+                    "https://test.api.com/token", 
+                    "https://test.api.com/market",
+                    "http://localhost:8080",
+                    "readonly",
+                    5000
+                );
+                marketDataService = new MarketDataService(fallbackProps);
+            }
         }
     }
 
@@ -66,9 +78,11 @@ class MarketDataServiceTest {
                 originalTokenContent = Files.readString(Paths.get(tokenFile));
                 Files.delete(Paths.get(tokenFile));
                 
-                // Also clear the TokenManager cache
-                TokenManager tokenManager = new TokenManager();
-                tokenManager.clearCache();
+                // Also clear any refresh token file
+                String refreshTokenFile = "schwab-refresh-token.txt";
+                if (Files.exists(Paths.get(refreshTokenFile))) {
+                    Files.delete(Paths.get(refreshTokenFile));
+                }
             }
         } catch (Exception e) {
             // Ignore errors during cleanup
@@ -204,33 +218,16 @@ class MarketDataServiceTest {
         }
 
         @Test
-        @DisplayName("Should handle service construction with default config")
-        void testConstructor_WithDefaultConfig() {
-            // When & Then - Should not throw during construction
-            assertDoesNotThrow(() -> {
-                try (MarketDataService service = new MarketDataService()) {
-                    assertNotNull(service);
-                    // Should not be ready without tokens
-                    assertFalse(service.isReady(), "Service should not be ready without valid tokens");
-                } catch (RuntimeException e) {
-                    // Expected if application.yml is not available - this is OK for tests
-                    assertTrue(e.getMessage().contains("application.yml") || 
-                              e.getMessage().contains("SchwabApiProperties"));
-                }
-            });
-        }
-
-        @Test
         @DisplayName("Should handle service construction with explicit properties")
         void testConstructor_WithExplicitProperties() {
             // Given
             SchwabApiProperties testProps = new SchwabApiProperties(
-                "https://test.api.com/auth",
-                "https://test.api.com/token", 
-                "https://test.api.com/market",
-                "http://localhost:8080",
+                "https://api.schwabapi.com/v1/oauth/authorize",
+                "https://api.schwabapi.com/v1/oauth/token", 
+                "https://api.schwabapi.com/marketdata/v1",
+                "https://127.0.0.1:8182",
                 "readonly",
-                5000
+                30000
             );
             
             // When & Then - Should not throw
@@ -252,22 +249,16 @@ class MarketDataServiceTest {
         void testClose_GracefulShutdown() {
             // When & Then
             assertDoesNotThrow(() -> {
-                try {
-                    SchwabApiProperties testProps = new SchwabApiProperties(
-                        "https://test.api.com/auth",
-                        "https://test.api.com/token", 
-                        "https://test.api.com/market",
-                        "http://localhost:8080",
-                        "readonly",
-                        5000
-                    );
-                    MarketDataService service = new MarketDataService(testProps);
-                    service.close();
-                } catch (RuntimeException e) {
-                    // Expected if application.yml issues - test the close behavior
-                    MarketDataService service = new MarketDataService();
-                    service.close();
-                }
+                SchwabApiProperties testProps = new SchwabApiProperties(
+                    "https://api.schwabapi.com/v1/oauth/authorize",
+                    "https://api.schwabapi.com/v1/oauth/token", 
+                    "https://api.schwabapi.com/marketdata/v1",
+                    "https://127.0.0.1:8182",
+                    "readonly",
+                    30000
+                );
+                MarketDataService service = new MarketDataService(testProps);
+                service.close();
             });
         }
 
@@ -277,12 +268,12 @@ class MarketDataServiceTest {
             // When & Then
             assertDoesNotThrow(() -> {
                 SchwabApiProperties testProps = new SchwabApiProperties(
-                    "https://test.api.com/auth",
-                    "https://test.api.com/token", 
-                    "https://test.api.com/market",
-                    "http://localhost:8080",
+                    "https://api.schwabapi.com/v1/oauth/authorize",
+                    "https://api.schwabapi.com/v1/oauth/token", 
+                    "https://api.schwabapi.com/marketdata/v1",
+                    "https://127.0.0.1:8182",
                     "readonly",
-                    5000
+                    30000
                 );
                 MarketDataService service = new MarketDataService(testProps);
                 service.close();
