@@ -1,5 +1,6 @@
 package com.higgstx.schwabtest.debug;
 
+import com.higgstx.schwabapi.exception.*;
 import com.higgstx.schwabapi.model.TokenResponse;
 import com.higgstx.schwabapi.service.TokenManager;
 import com.higgstx.schwabtest.config.SchwabTestConfig;
@@ -16,7 +17,8 @@ import java.time.temporal.ChronoUnit;
 @SpringBootApplication(scanBasePackages = "com.higgstx.schwabtest")
 public class SimpleTokenCheckerMain {
     
-    public static void main(String[] args) {
+    public static void main(String[] args) 
+    throws SchwabApiException {
         System.setProperty("spring.main.banner-mode", "off");
         System.setProperty("spring.main.log-startup-info", "false");
         
@@ -61,7 +63,8 @@ public class SimpleTokenCheckerMain {
     /**
      * Check token health without Spring context (for lightweight health checks)
      */
-    public static void checkTokenHealthOnlyStandalone() {
+    public static void checkTokenHealthOnlyStandalone()
+    throws SchwabApiException{
         TokenResponse tokens = TokenManager.loadTokens(false);
         
         if (tokens == null) {

@@ -1,5 +1,6 @@
 package com.higgstx.schwabtest.debug;
 
+import com.higgstx.schwabapi.exception.*;
 import com.higgstx.schwabapi.model.TokenResponse;
 import com.higgstx.schwabapi.service.TokenManager;
 import org.slf4j.Logger;
@@ -16,7 +17,8 @@ public class TokenRefreshDebugger {
     
     private static final Logger logger = LoggerFactory.getLogger(TokenRefreshDebugger.class);
     
-    public static void main(String[] args) {
+    public static void main(String[] args)
+    throws SchwabApiException {
         System.out.println("=".repeat(60));
         System.out.println("           TOKEN REFRESH DEBUGGER");
         System.out.println("=".repeat(60));
@@ -27,7 +29,8 @@ public class TokenRefreshDebugger {
     /**
      * Comprehensive token refresh debugging
      */
-    public static void debugTokenRefresh() {
+    public static void debugTokenRefresh() 
+    throws SchwabApiException{
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
                 .withZone(ZoneId.systemDefault());
         Instant now = Instant.now();

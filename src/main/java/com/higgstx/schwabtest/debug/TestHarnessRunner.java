@@ -1,4 +1,3 @@
-//v24 - Complete file with working bulk historical data test
 package com.higgstx.schwabtest.debug;
 
 import com.higgstx.schwabapi.config.SchwabOAuthClient;
@@ -17,7 +16,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.awt.Desktop;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -31,93 +29,96 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class TestHarnessRunner implements CommandLineRunner
-{
+public class TestHarnessRunner implements CommandLineRunner {
 
-    private static final Logger logger = LoggerFactory.getLogger(
-            TestHarnessRunner.class);
+    private static final Logger logger = LoggerFactory.getLogger(TestHarnessRunner.class);
     private final SchwabTestConfig config;
     private final TokenManager tokenManager;
     private final MarketDataService marketDataService;
 
     public TestHarnessRunner(SchwabTestConfig config, TokenManager tokenManager,
-            MarketDataService marketDataService)
-    {
+            MarketDataService marketDataService) {
         this.config = config;
         this.tokenManager = tokenManager;
         this.marketDataService = marketDataService;
     }
 
     @Override
-    public void run(String... args)
-    {
-        System.out.println(
-                "============================================================");
+    public void run(String... args) {
+        System.out.println("============================================================");
         System.out.println("          SCHWAB API INTERACTIVE TEST HARNESS");
-        System.out.println(
-                "============================================================");
+        System.out.println("============================================================");
         System.out.println();
 
         Scanner scanner = new Scanner(System.in);
-        while (true)
-        {
+        while (true) {
             displayMenu();
             String choice = scanner.nextLine();
-            try
-            {
-                switch (choice)
-                {
-                    case "1":
-                        showConfigurationStatus();
-                        break;
-                    case "2":
-                        automaticOAuth(scanner);
-                        break;
-                    case "3":
-                        manualOAuth(scanner);
-                        break;
-                    case "4":
-                        tokenManager.showTokenStatus();
-                        break;
-                    case "5":
-                        testAutomatedRefresh();
-                        break;
-                    case "6":
-                        testMarketData();
-                        break;
-                    case "7":
-                        testHistoricalData(scanner);
-                        break;
-                    case "8":
-                        testBulkHistoricalData(scanner);
-                        break;
-                    case "9":
-                        System.out.println("Exiting. Goodbye!");
-                        scanner.close();
-                        return;
-                    default:
-                        System.out.println(
-                                "Invalid choice. Please enter a number between 1 and 9.");
-                }
+            
+            try {
+                handleMenuChoice(choice, scanner);
+            } catch (SchwabApiException e) {
+                handleApiException(e);
+            } catch (Exception e) {
+                handleGenericException(e);
             }
-            catch (Exception e)
-            {
-                System.err.println("An unexpected error occurred: " + e.
-                        getMessage());
-                logger.error("Menu option failed", e);
+            
+            if ("9".equals(choice)) {
+                scanner.close();
+                return;
             }
+            
             System.out.println("\nPress Enter to continue...");
             scanner.nextLine();
         }
     }
 
-    private void displayMenu()
-    {
-        System.out.println(
-                "============================================================");
+    private void handleMenuChoice(String choice, Scanner scanner) throws SchwabApiException {
+        switch (choice) {
+            case "1" -> showConfigurationStatus();
+            case "2" -> automaticOAuth(scanner);
+            case "3" -> manualOAuth(scanner);
+            case "4" -> tokenManager.showTokenStatus();
+            case "5" -> testAutomatedRefresh();
+            case "6" -> testMarketData();
+            case "7" -> testHistoricalData(scanner);
+            case "8" -> testBulkHistoricalData(scanner);
+            case "9" -> {
+                System.out.println("Exiting. Goodbye!");
+                return;
+            }
+            default -> System.out.println("Invalid choice. Please enter a number between 1 and 9.");
+        }
+    }
+
+    private void handleApiException(SchwabApiException e) {
+        System.err.println("\nAPI Error Details:");
+        System.err.println("  Message: " + e.getDisplayMessage());
+        System.err.println("  Category: " + e.getErrorCategory().getDescription());
+        System.err.println("  Status Code: " + e.getStatusCode());
+        System.err.println("  Error Code: " + e.getErrorCode());
+        System.err.println("  Recommended Action: " + e.getRecommendedAction());
+        
+        if (e.shouldAlert()) {
+            System.err.println("  Severity: " + e.getSeverity());
+        }
+        
+        if (e.isRetryable()) {
+            System.err.println("  Note: This error is retryable. Wait " + e.getRetryAfterSeconds() + " seconds before retrying.");
+        }
+        
+        logger.error("Menu option failed with API exception", e);
+    }
+
+    private void handleGenericException(Exception e) {
+        System.err.println("An unexpected error occurred: " + e.getMessage());
+        logger.error("Menu option failed", e);
+    }
+
+    private void displayMenu() {
+        System.out.println("============================================================");
         System.out.println("MAIN MENU - Select an option:");
-        System.out.println(
-                "============================================================");
+        System.out.println("============================================================");
         System.out.println("1. Configuration Status");
         System.out.println("2. Automatic OAuth Authorization (HTTPS)");
         System.out.println("3. Manual OAuth Authorization (fallback)");
@@ -127,1102 +128,666 @@ public class TestHarnessRunner implements CommandLineRunner
         System.out.println("7. Test Historical Data (Individual)");
         System.out.println("8. Test Bulk Historical Data");
         System.out.println("9. Exit");
-        System.out.println(
-                "============================================================");
+        System.out.println("============================================================");
         System.out.print("Enter your choice (1-9): ");
     }
 
-    private void testBulkHistoricalData(Scanner scanner)
-    {
+    private void testBulkHistoricalData(Scanner scanner) throws SchwabApiException {
         System.out.println("\n--- Testing Bulk Historical Data API ---");
-        System.out.println(
-                "This test uses the getBulkHistoricalData method to fetch 30 days of data for multiple symbols in a single call.");
+        System.out.println("This test uses the getBulkHistoricalData method to fetch 30 days of data for multiple symbols.");
 
-        // Ensure service is ready with automated refresh
-        if (!marketDataService.ensureServiceReady("testBulkHistoricalData"))
-        {
+        if (!marketDataService.ensureServiceReady("testBulkHistoricalData")) {
+            System.out.println("Service not ready. Please ensure tokens are valid and try again.");
             return;
         }
 
-        System.out.print(
-                "Enter ticker symbols (comma-separated, e.g., AAPL,MSFT,GOOGL): ");
+        System.out.print("Enter ticker symbols (comma-separated, e.g., AAPL,MSFT,GOOGL): ");
         String symbolsInput = scanner.nextLine().trim();
-        if (symbolsInput.isEmpty())
-        {
-            symbolsInput = "AAPL,MSFT,GOOGL,TSLA,SPY"; // Default symbols
-            System.out.println(
-                    "No symbols entered, using default: " + symbolsInput);
+        if (symbolsInput.isEmpty()) {
+            symbolsInput = "AAPL,MSFT,GOOGL,TSLA,SPY";
+            System.out.println("No symbols entered, using default: " + symbolsInput);
         }
 
         String[] symbols = symbolsInput.split(",");
-        for (int i = 0; i < symbols.length; i++)
-        {
+        for (int i = 0; i < symbols.length; i++) {
             symbols[i] = symbols[i].trim().toUpperCase();
         }
 
-        System.out.println(
-                "\n" + "=".repeat(70));
-        System.out.println(
-                "BULK HISTORICAL DATA TEST");
-        System.out.println(
-                "=".repeat(70));
+        System.out.println("\n" + "=".repeat(70));
+        System.out.println("BULK HISTORICAL DATA TEST");
+        System.out.println("=".repeat(70));
         System.out.println("Symbols to fetch: " + String.join(", ", symbols));
         System.out.println("Period: 30 days (1 month of daily data)");
-        System.out.println("Method: getBulkHistoricalData()");
-        System.out.println(
-                "Expected behavior: Single method call fetches data for all symbols");
 
         long startTime = System.currentTimeMillis();
 
-        try
-        {
+        try {
             System.out.println("\nCalling getBulkHistoricalData...");
-            List<DailyPriceData> bulkData = marketDataService.
-                    getBulkHistoricalData(symbols);
+            List<DailyPriceData> bulkData = marketDataService.getBulkHistoricalData(symbols);
 
             long endTime = System.currentTimeMillis();
             long totalTime = endTime - startTime;
 
-            System.out.println("\n" + "=".repeat(70));
-            System.out.println("BULK FETCH RESULTS");
-            System.out.println("=".repeat(70));
-            System.out.println("Total time: " + totalTime + "ms");
-            System.out.println("Total data points returned: " + bulkData.size());
-            System.out.println("Symbols requested: " + symbols.length);
+            displayBulkResults(symbols, bulkData, totalTime);
 
-            // Analyze results by symbol
-            Map<String, List<DailyPriceData>> dataBySymbol = bulkData.stream()
-                    .collect(Collectors.groupingBy(DailyPriceData::getSymbol));
-
-            System.out.println("\nResults by symbol:");
-            System.out.println("-".repeat(50));
-
-            for (String symbol : symbols)
-            {
-                List<DailyPriceData> symbolData = dataBySymbol.get(symbol);
-
-                if (symbolData == null || symbolData.isEmpty())
-                {
-                    System.out.println(symbol + ": No data returned");
-                    continue;
-                }
-
-                // Count successful vs error data points
-                long successCount = symbolData.stream().filter(
-                        DailyPriceData::isSuccess).count();
-                long errorCount = symbolData.size() - successCount;
-
-                System.out.println(symbol + ":");
-                System.out.println("  Total data points: " + symbolData.size());
-                System.out.println("  Successful: " + successCount);
-                System.out.println("  Errors: " + errorCount);
-
-                if (successCount > 0)
-                {
-                    // Show sample successful data
-                    DailyPriceData sample = symbolData.stream()
-                            .filter(DailyPriceData::isSuccess)
-                            .findFirst().orElse(null);
-
-                    if (sample != null)
-                    {
-                        System.out.println("  Sample data:");
-                        System.out.println("    Date: " + sample.getLocalDate());
-                        System.out.println("    Open: $" + sample.getOpen());
-                        System.out.println("    High: $" + sample.getHigh());
-                        System.out.println("    Low: $" + sample.getLow());
-                        System.out.println("    Close: $" + sample.getClose());
-                        System.out.println("    Volume: " + formatVolume(sample.
-                                getVolume()));
-                    }
-
-                    // Show date range
-                    List<DailyPriceData> successfulData = symbolData.stream()
-                            .filter(DailyPriceData::isSuccess)
-                            .sorted((a, b) -> a.getLocalDate().compareTo(b.
-                            getLocalDate()))
-                            .collect(Collectors.toList());
-
-                    if (successfulData.size() > 1)
-                    {
-                        System.out.println("  Date range: "
-                                + successfulData.get(0).getLocalDate() + " to "
-                                + successfulData.get(successfulData.size() - 1).
-                                        getLocalDate());
-                    }
-                }
-                else if (errorCount > 0)
-                {
-                    // Show error message
-                    DailyPriceData errorSample = symbolData.stream()
-                            .filter(data -> !data.isSuccess())
-                            .findFirst().orElse(null);
-
-                    if (errorSample != null && errorSample.getErrorMessage() != null)
-                    {
-                        System.out.println("  Error: " + errorSample.
-                                getErrorMessage());
-                    }
-                }
-                System.out.println();
-            }
-
-            // Performance analysis
-            System.out.println("PERFORMANCE ANALYSIS:");
-            System.out.println("-".repeat(50));
-            System.out.println(
-                    "Average time per symbol: " + (totalTime / symbols.length) + "ms");
-            System.out.println("Data points per second: "
-                    + (bulkData.size() * 1000 / Math.max(totalTime, 1)));
-
-            // Data quality analysis
-            long totalSuccessful = bulkData.stream().filter(
-                    DailyPriceData::isSuccess).count();
-            long totalErrors = bulkData.size() - totalSuccessful;
-            double successRate = (double) totalSuccessful / bulkData.size() * 100;
-
-            System.out.println("\nDATA QUALITY:");
-            System.out.println("-".repeat(50));
-            System.out.println("Success rate: " + String.format("%.1f%%",
-                    successRate));
-            System.out.println("Successful data points: " + totalSuccessful);
-            System.out.println("Failed data points: " + totalErrors);
-
-            // Show recent data points from successful fetches
-            if (totalSuccessful > 0)
-            {
-                System.out.println("\nMOST RECENT DATA SAMPLES:");
-                System.out.println("-".repeat(50));
-
-                bulkData.stream()
-                        .filter(DailyPriceData::isSuccess)
-                        .sorted((a, b) -> b.getLocalDate().compareTo(a.
-                        getLocalDate())) // Most recent first
-                        .limit(5)
-                        .forEach(data ->
-                        {
-                            System.out.println(data.getSymbol() + " (" + data.
-                                    getLocalDate() + "): "
-                                    + "Close $" + data.getClose() + ", Volume " + formatVolume(
-                                    data.getVolume()));
-                        });
-            }
-
+        } catch (SchwabApiException e) {
+            System.err.println("API Error during bulk fetch:");
+            System.err.println("  " + e.getDisplayMessage());
+            System.err.println("  Recommended Action: " + e.getRecommendedAction());
+            throw e;
         }
-        catch (IOException e)
-        {
-            System.err.println("Network/IO Error during bulk fetch: " + e.
-                    getMessage());
-            logger.error("Bulk historical data test failed", e);
-        }
-        catch (Exception e)
-        {
-            System.err.println("Unexpected error during bulk fetch: " + e.
-                    getMessage());
-            logger.error("Bulk historical data test failed", e);
+    }
+
+    private void displayBulkResults(String[] symbols, List<DailyPriceData> bulkData, long totalTime) {
+        System.out.println("\n" + "=".repeat(70));
+        System.out.println("BULK FETCH RESULTS");
+        System.out.println("=".repeat(70));
+        System.out.println("Total time: " + totalTime + "ms");
+        System.out.println("Total data points returned: " + bulkData.size());
+        System.out.println("Symbols requested: " + symbols.length);
+
+        Map<String, List<DailyPriceData>> dataBySymbol = bulkData.stream()
+                .collect(Collectors.groupingBy(DailyPriceData::getSymbol));
+
+        System.out.println("\nResults by symbol:");
+        System.out.println("-".repeat(50));
+
+        for (String symbol : symbols) {
+            displaySymbolResults(symbol, dataBySymbol.get(symbol));
         }
 
+        displayPerformanceAnalysis(symbols, bulkData, totalTime);
+        displayDataQualityAnalysis(bulkData);
+        displayRecentSamples(bulkData);
+        displayTestNotes();
+    }
+
+    private void displaySymbolResults(String symbol, List<DailyPriceData> symbolData) {
+        if (symbolData == null || symbolData.isEmpty()) {
+            System.out.println(symbol + ": No data returned");
+            return;
+        }
+
+        long successCount = symbolData.stream().filter(DailyPriceData::isSuccess).count();
+        long errorCount = symbolData.size() - successCount;
+
+        System.out.println(symbol + ":");
+        System.out.println("  Total data points: " + symbolData.size());
+        System.out.println("  Successful: " + successCount);
+        System.out.println("  Errors: " + errorCount);
+
+        if (successCount > 0) {
+            displaySuccessfulDataSample(symbolData);
+            displayDateRange(symbolData);
+        } else if (errorCount > 0) {
+            displayErrorSample(symbolData);
+        }
+        System.out.println();
+    }
+
+    private void displaySuccessfulDataSample(List<DailyPriceData> symbolData) {
+        DailyPriceData sample = symbolData.stream()
+                .filter(DailyPriceData::isSuccess)
+                .findFirst().orElse(null);
+
+        if (sample != null) {
+            System.out.println("  Sample data:");
+            System.out.println("    Date: " + sample.getLocalDate());
+            System.out.println("    Open: $" + sample.getOpen());
+            System.out.println("    High: $" + sample.getHigh());
+            System.out.println("    Low: $" + sample.getLow());
+            System.out.println("    Close: $" + sample.getClose());
+            System.out.println("    Volume: " + formatVolume(sample.getVolume()));
+        }
+    }
+
+    private void displayDateRange(List<DailyPriceData> symbolData) {
+        List<DailyPriceData> successfulData = symbolData.stream()
+                .filter(DailyPriceData::isSuccess)
+                .sorted((a, b) -> a.getLocalDate().compareTo(b.getLocalDate()))
+                .collect(Collectors.toList());
+
+        if (successfulData.size() > 1) {
+            System.out.println("  Date range: "
+                    + successfulData.get(0).getLocalDate() + " to "
+                    + successfulData.get(successfulData.size() - 1).getLocalDate());
+        }
+    }
+
+    private void displayErrorSample(List<DailyPriceData> symbolData) {
+        DailyPriceData errorSample = symbolData.stream()
+                .filter(data -> !data.isSuccess())
+                .findFirst().orElse(null);
+
+        if (errorSample != null && errorSample.getErrorMessage() != null) {
+            System.out.println("  Error: " + errorSample.getErrorMessage());
+        }
+    }
+
+    private void displayPerformanceAnalysis(String[] symbols, List<DailyPriceData> bulkData, long totalTime) {
+        System.out.println("PERFORMANCE ANALYSIS:");
+        System.out.println("-".repeat(50));
+        System.out.println("Average time per symbol: " + (totalTime / symbols.length) + "ms");
+        System.out.println("Data points per second: " + (bulkData.size() * 1000 / Math.max(totalTime, 1)));
+    }
+
+    private void displayDataQualityAnalysis(List<DailyPriceData> bulkData) {
+        long totalSuccessful = bulkData.stream().filter(DailyPriceData::isSuccess).count();
+        long totalErrors = bulkData.size() - totalSuccessful;
+        double successRate = (double) totalSuccessful / bulkData.size() * 100;
+
+        System.out.println("\nDATA QUALITY:");
+        System.out.println("-".repeat(50));
+        System.out.println("Success rate: " + String.format("%.1f%%", successRate));
+        System.out.println("Successful data points: " + totalSuccessful);
+        System.out.println("Failed data points: " + totalErrors);
+    }
+
+    private void displayRecentSamples(List<DailyPriceData> bulkData) {
+        long totalSuccessful = bulkData.stream().filter(DailyPriceData::isSuccess).count();
+        
+        if (totalSuccessful > 0) {
+            System.out.println("\nMOST RECENT DATA SAMPLES:");
+            System.out.println("-".repeat(50));
+
+            bulkData.stream()
+                    .filter(DailyPriceData::isSuccess)
+                    .sorted((a, b) -> b.getLocalDate().compareTo(a.getLocalDate()))
+                    .limit(5)
+                    .forEach(data -> {
+                        System.out.println(data.getSymbol() + " (" + data.getLocalDate() + "): "
+                                + "Close $" + data.getClose() + ", Volume " + formatVolume(data.getVolume()));
+                    });
+        }
+    }
+
+    private void displayTestNotes() {
         System.out.println("\n" + "=".repeat(70));
         System.out.println("BULK HISTORICAL DATA TEST COMPLETE");
         System.out.println("=".repeat(70));
 
         System.out.println("Notes about this test:");
-        System.out.println(
-                "• getBulkHistoricalData() makes individual API calls for each symbol");
-        System.out.println(
-                "• Includes 100ms delay between requests to respect API rate limits");
-        System.out.
-                println("• Returns all data in a single List<DailyPriceData>");
-        System.out.println(
-                "• Gracefully handles errors by returning error data objects");
-        System.out.println(
-                "• Fetches 30 days (1 month) of daily OHLCV data per symbol");
+        System.out.println("• getBulkHistoricalData() makes individual API calls for each symbol");
+        System.out.println("• Includes 100ms delay between requests to respect API rate limits");
+        System.out.println("• Returns all data in a single List<DailyPriceData>");
+        System.out.println("• Gracefully handles errors by returning error data objects");
+        System.out.println("• Fetches 30 days (1 month) of daily OHLCV data per symbol");
 
         String currentTokenStatus = marketDataService.getTokenStatus();
-        if (currentTokenStatus.contains("ERROR") || !marketDataService.isReady())
-        {
+        if (currentTokenStatus.contains("ERROR") || !marketDataService.isReady()) {
             System.out.println("\nTroubleshooting:");
-            System.out.println(
-                    "• Token issues detected - try option 4 to check token status");
-            System.out.println(
-                    "• If tokens expired, run option 5 (force refresh) or option 2 (re-auth)");
+            System.out.println("• Token issues detected - try option 4 to check token status");
+            System.out.println("• If tokens expired, run option 5 (force refresh) or option 2 (re-auth)");
         }
     }
 
-    private String formatVolume(Long volume)
-    {
-        if (volume == null)
-        {
-            return "N/A";
-        }
+    private String formatVolume(Long volume) {
+        if (volume == null) return "N/A";
 
-        if (volume >= 1_000_000_000)
-        {
+        if (volume >= 1_000_000_000) {
             return String.format("%.1fB", volume / 1_000_000_000.0);
-        }
-        else if (volume >= 1_000_000)
-        {
+        } else if (volume >= 1_000_000) {
             return String.format("%.1fM", volume / 1_000_000.0);
-        }
-        else if (volume >= 1_000)
-        {
+        } else if (volume >= 1_000) {
             return String.format("%.1fK", volume / 1_000.0);
-        }
-        else
-        {
+        } else {
             return volume.toString();
         }
     }
 
-    private void automaticOAuth(Scanner scanner)
-    {
+    private void automaticOAuth(Scanner scanner) throws SchwabApiException {
         System.out.println("\n--- Automatic OAuth Authorization ---");
-        System.out.println(
-                "This will start a local web server to handle the OAuth callback automatically.");
-        System.out.println(
-                "Your browser will open automatically to complete the authorization.");
+        System.out.println("This will start a local HTTPS server to handle the OAuth callback automatically.");
 
-        // Use HTTPS with OkHttp's SSL support
         String redirectUri = "https://127.0.0.1:8182";
-
         OkHttpSSLServer callbackServer = null;
-        try
-        {
+
+        try {
             callbackServer = new OkHttpSSLServer();
+            CompletableFuture<String> authCodeFuture = callbackServer.startAndWaitForCode(300, TimeUnit.SECONDS);
 
-            // Start server and wait for callback
-            CompletableFuture<String> authCodeFuture = callbackServer.
-                    startAndWaitForCode(300, TimeUnit.SECONDS);
+            System.out.println("\nHTTPS server started successfully on: " + redirectUri);
+            System.out.println("\nIMPORTANT: Ensure this redirect URI is configured in your Schwab Developer Portal");
 
-            System.out.println("\nHTTPS server started successfully!");
-            System.out.println("Server URL: " + redirectUri);
-            System.out.println(
-                    "\nIMPORTANT: Configure this redirect URI in your Schwab Developer Portal:");
-            System.out.println("  Redirect URI: " + redirectUri);
-
-            // Test the server first
-            System.out.println("\nTesting server accessibility...");
-            System.out.println(
-                    "Opening " + redirectUri + " should show a styled success page.");
-            System.out.println(
-                    "You'll see a browser security warning - this is expected for self-signed certificates.");
-            System.out.println(
-                    "Click 'Advanced' then 'Proceed to 127.0.0.1 (unsafe)' to continue.");
-
-            System.out.print(
-                    "\nDid the test page load successfully after bypassing the warning? (y/n): ");
-            String testResult = scanner.nextLine();
-
-            if (!testResult.equalsIgnoreCase("y"))
-            {
-                System.out.println("\nServer test failed. Troubleshooting:");
-                System.out.println("1. Port 8182 might be blocked by firewall");
-                System.out.println(
-                        "2. Another application might be using port 8182");
-                System.out.println(
-                        "3. Browser might be blocking self-signed certificates completely");
-                System.out.println(
-                        "4. Try option 3 (Manual OAuth) as a reliable fallback");
+            if (!testServerAccessibility(scanner, redirectUri)) {
                 return;
             }
 
-            System.out.println(
-                    "Server test successful! The HTTPS server is working properly.");
-
-            // Create OAuth client with HTTPS redirect URI
-            SchwabApiProperties apiProperties = new SchwabApiProperties(
-                    config.getUrls().getAuth(),
-                    config.getUrls().getToken(),
-                    config.getUrls().getMarketData(),
-                    redirectUri, // HTTPS redirect URI
-                    config.getDefaults().getScope(),
-                    config.getDefaults().getHttpTimeoutMs()
-            );
-
-            try (SchwabOAuthClient client = new SchwabOAuthClient(apiProperties))
-            {
-
-                // Build authorization URL
-                String authUrl = client.
-                        buildAuthorizationUrl(config.getAppKey(), redirectUri);
-
-                System.out.println("\n" + "=".repeat(80));
-                System.out.println("STEP 1: Opening Browser for Authorization");
-                System.out.println("=".repeat(80));
-
-                // Try to open browser automatically
-                if (openBrowser(authUrl))
-                {
-                    System.out.println(
-                            "Browser opened automatically. Please complete the authorization in your browser.");
-                }
-                else
-                {
-                    System.out.println(
-                            "Could not open browser automatically. Please manually open this URL:");
-                    System.out.println(authUrl);
-                }
-
-                System.out.println("\nInstructions:");
-                System.out.println(
-                        "1. Log into your Schwab account in the opened browser");
-                System.out.println("2. Review and approve the API permissions");
-                System.out.println(
-                        "3. Schwab will redirect back to the local server automatically");
-                System.out.println(
-                        "4. The authorization code will be captured automatically");
-
-                System.out.println("\n" + "=".repeat(80));
-                System.out.println("STEP 2: Waiting for Authorization...");
-                System.out.println("=".repeat(80));
-                System.out.println(
-                        "Waiting for authorization callback (timeout: 5 minutes)...");
-
-                // Wait for the authorization code
-                String authCode;
-                try
-                {
-                    authCode = authCodeFuture.get(); // This blocks until callback received or timeout
-                    System.out.println(
-                            "Authorization code received successfully!");
-
-                }
-                catch (Exception e)
-                {
-                    System.err.println(
-                            "Failed to receive authorization code: " + e.
-                                    getMessage());
-                    if (e.getCause() instanceof java.util.concurrent.TimeoutException)
-                    {
-                        System.err.println(
-                                "Timeout waiting for authorization. Please try again.");
-                    }
-                    return;
-                }
-
-                System.out.println("\n" + "=".repeat(80));
-                System.out.println("STEP 3: Exchanging Code for Tokens");
-                System.out.println("=".repeat(80));
-
-                // Exchange code for tokens
-                System.out.println(
-                        "Exchanging authorization code for access tokens...");
-                TokenResponse tokens = client.getTokens(
-                        config.getAppKey(),
-                        config.getAppSecret(),
-                        authCode,
-                        redirectUri
-                );
-
-                // Save tokens
-                tokenManager.saveTokensInstance(tokens);
-
-                // Save refresh token separately
-                try
-                {
-                    Path refreshTokenPath = Paths.get(tokenManager.
-                            getRefreshTokenFile());
-                    Files.
-                            writeString(refreshTokenPath, tokens.
-                                    getRefreshToken());
-                }
-                catch (IOException e)
-                {
-                    logger.error("Failed to write refresh token to file: {}", e.
-                            getMessage());
-                    System.err.println(
-                            "Warning: Failed to save refresh token to file. Automated refresh may not work.");
-                }
-
-                System.out.println("\n" + "=".repeat(80));
-                System.out.println("SUCCESS! OAuth Authorization Complete");
-                System.out.println("=".repeat(80));
-                System.out.println("Access token expires at: " + tokens.
-                        getExpiresAt());
-                System.out.println("Refresh token expires at: " + tokens.
-                        getRefreshTokenExpiresAt());
-                System.out.println(
-                        "You can now use the API endpoints (option 6, 7, or 8).");
-
-            }
-            catch (Exception e)
-            {
-                System.err.println("OAuth error: " + e.getClass().
-                        getSimpleName() + ": " + e.getMessage());
-                logger.error("OAuth process failed", e);
+            SchwabApiProperties apiProperties = createApiProperties(redirectUri);
+            
+            try (SchwabOAuthClient client = new SchwabOAuthClient(apiProperties)) {
+                String authUrl = client.buildAuthorizationUrl(config.getAppKey(), redirectUri);
+                
+                performAutomaticOAuthFlow(scanner, authUrl, authCodeFuture, client, redirectUri);
             }
 
-        }
-        catch (IOException e)
-        {
-            System.err.println("Failed to create OAuth callback server: " + e.
-                    getMessage());
-            logger.error("Callback server creation failed", e);
-        }
-        finally
-        {
-            if (callbackServer != null)
-            {
-                try
-                {
-                    callbackServer.close();
-                }
-                catch (Exception e)
-                {
-                    System.err.println(
-                            "Warning: Error closing callback server: " + e.
-                                    getMessage());
-                }
+        } catch (Exception e) {
+            if (e instanceof SchwabApiException) {
+                throw (SchwabApiException) e;
             }
+            throw SchwabApiException.networkError("automatic OAuth flow", e);
+        } finally {
+            closeServerSafely(callbackServer);
         }
     }
 
-    /**
-     * Attempts to open the URL in the default browser
-     */
-    private boolean openBrowser(String url)
-    {
-        try
-        {
-            if (Desktop.isDesktopSupported())
-            {
+    private boolean testServerAccessibility(Scanner scanner, String redirectUri) {
+        System.out.println("\nTesting server accessibility...");
+        System.out.println("You'll see a browser security warning - this is expected for self-signed certificates.");
+        System.out.println("Click 'Advanced' then 'Proceed to 127.0.0.1 (unsafe)' to continue.");
+
+        System.out.print("\nDid the test page load successfully after bypassing the warning? (y/n): ");
+        String testResult = scanner.nextLine();
+
+        if (!testResult.equalsIgnoreCase("y")) {
+            System.out.println("\nServer test failed. Try option 3 (Manual OAuth) as a fallback.");
+            return false;
+        }
+
+        System.out.println("Server test successful!");
+        return true;
+    }
+
+    private SchwabApiProperties createApiProperties(String redirectUri) throws SchwabApiException {
+        return new SchwabApiProperties(
+                config.getUrls().getAuth(),
+                config.getUrls().getToken(),
+                config.getUrls().getMarketData(),
+                redirectUri,
+                config.getDefaults().getScope(),
+                config.getDefaults().getHttpTimeoutMs()
+        );
+    }
+
+    private void performAutomaticOAuthFlow(Scanner scanner, String authUrl, CompletableFuture<String> authCodeFuture, 
+                                         SchwabOAuthClient client, String redirectUri) throws SchwabApiException {
+        
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("STEP 1: Opening Browser for Authorization");
+        System.out.println("=".repeat(80));
+
+        if (openBrowser(authUrl)) {
+            System.out.println("Browser opened automatically.");
+        } else {
+            System.out.println("Please manually open this URL: " + authUrl);
+        }
+
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("STEP 2: Waiting for Authorization...");
+        System.out.println("=".repeat(80));
+
+        try {
+            String authCode = authCodeFuture.get();
+            System.out.println("Authorization code received successfully!");
+
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("STEP 3: Exchanging Code for Tokens");
+            System.out.println("=".repeat(80));
+
+            TokenResponse tokens = client.getTokens(
+                    config.getAppKey(),
+                    config.getAppSecret(),
+                    authCode,
+                    redirectUri
+            );
+
+            saveTokensAndComplete(tokens);
+
+        } catch (Exception e) {
+            if (e.getCause() instanceof java.util.concurrent.TimeoutException) {
+                throw SchwabApiException.timeout("Authorization timed out after 5 minutes");
+            }
+            throw SchwabApiException.networkError("OAuth authorization", e);
+        }
+    }
+
+    private boolean openBrowser(String url) {
+        try {
+            if (Desktop.isDesktopSupported()) {
                 Desktop desktop = Desktop.getDesktop();
-                if (desktop.isSupported(Desktop.Action.BROWSE))
-                {
+                if (desktop.isSupported(Desktop.Action.BROWSE)) {
                     desktop.browse(new URI(url));
                     return true;
                 }
             }
 
-            // Fallback: try OS-specific commands
             String os = System.getProperty("os.name").toLowerCase();
             ProcessBuilder pb;
 
-            if (os.contains("win"))
-            {
+            if (os.contains("win")) {
                 pb = new ProcessBuilder("cmd", "/c", "start", url);
-            }
-            else if (os.contains("mac"))
-            {
+            } else if (os.contains("mac")) {
                 pb = new ProcessBuilder("open", url);
-            }
-            else if (os.contains("nix") || os.contains("nux"))
-            {
+            } else if (os.contains("nix") || os.contains("nux")) {
                 pb = new ProcessBuilder("xdg-open", url);
-            }
-            else
-            {
+            } else {
                 return false;
             }
 
             pb.start();
             return true;
 
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             logger.debug("Failed to open browser: {}", e.getMessage());
             return false;
         }
     }
 
-    private void manualOAuth(Scanner scanner)
-    {
-        System.out.println("\n--- Manual OAuth Authorization ---");
-        System.out.println("App Key: " + config.getAppKey());
-        System.out.println("Redirect URI: " + config.getRedirectUri()
-                + " (must be configured in Schwab Developer Portal)");
+    private void saveTokensAndComplete(TokenResponse tokens) throws SchwabApiException {
+        tokenManager.saveTokensInstance(tokens);
 
-        System.out.println("\nThis process requires manual URL copying.");
+        try {
+            Path refreshTokenPath = Paths.get(tokenManager.getRefreshTokenFile());
+            Files.writeString(refreshTokenPath, tokens.getRefreshToken());
+        } catch (IOException e) {
+            logger.error("Failed to write refresh token to file: {}", e.getMessage());
+            System.err.println("Warning: Failed to save refresh token to file.");
+        }
+
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("SUCCESS! OAuth Authorization Complete");
+        System.out.println("=".repeat(80));
+        System.out.println("Access token expires at: " + tokens.getExpiresAt());
+        System.out.println("Refresh token expires at: " + tokens.getRefreshTokenExpiresAt());
+        System.out.println("You can now use the API endpoints (options 6, 7, or 8).");
+    }
+
+    private void closeServerSafely(OkHttpSSLServer callbackServer) {
+        if (callbackServer != null) {
+            try {
+                callbackServer.close();
+            } catch (Exception e) {
+                System.err.println("Warning: Error closing callback server: " + e.getMessage());
+            }
+        }
+    }
+
+    private void manualOAuth(Scanner scanner) throws SchwabApiException {
+        System.out.println("\n--- Manual OAuth Authorization ---");
+        System.out.println("This process requires manual URL copying and pasting.");
 
         System.out.print("\nProceed with manual OAuth authorization? (y/n): ");
-        String response = scanner.nextLine();
-        if (!response.equalsIgnoreCase("y"))
-        {
+        if (!scanner.nextLine().equalsIgnoreCase("y")) {
             System.out.println("Authorization cancelled.");
             return;
         }
 
-        SchwabOAuthClient client = null;
-        try
-        {
-            // Create SchwabApiProperties manually
-            System.out.println("Creating OAuth client...");
-            SchwabApiProperties apiProperties = new SchwabApiProperties(
-                    config.getUrls().getAuth(), // Auth URL
-                    config.getUrls().getToken(), // Token URL  
-                    config.getUrls().getMarketData(), // Market Data URL
-                    config.getDefaults().getRedirectUri(), // HTTPS Redirect URI
-                    config.getDefaults().getScope(), // Scope
-                    config.getDefaults().getHttpTimeoutMs() // Timeout
-            );
+        SchwabApiProperties apiProperties = new SchwabApiProperties(
+                config.getUrls().getAuth(),
+                config.getUrls().getToken(),
+                config.getUrls().getMarketData(),
+                config.getDefaults().getRedirectUri(),
+                config.getDefaults().getScope(),
+                config.getDefaults().getHttpTimeoutMs()
+        );
 
-            // Create client with explicit properties
-            client = new SchwabOAuthClient(apiProperties);
-
-            System.out.println(
-                    "============================================================");
-            System.out.println("STEP 1: Browser Authorization");
-            System.out.println(
-                    "============================================================");
-            System.out.println("Building authorization URL...");
-
-            String authUrl = client.buildAuthorizationUrl(config.getAppKey(),
-                    config.getRedirectUri());
-
-            System.out.println(
-                    "\nPlease manually open this URL in your browser:");
-            System.out.println("=".repeat(80));
-            System.out.println(authUrl);
-            System.out.println("=".repeat(80));
-
-            System.out.println("\nInstructions:");
-            System.out.println(
-                    "1. Copy the URL above and paste it into your browser");
-            System.out.println("2. Log into your Schwab account");
-            System.out.println("3. Review and approve the API permissions");
-            System.out.println("4. Schwab will redirect to: " + config.
-                    getRedirectUri() + "?code=...");
-            System.out.println(
-                    "5. Browser will show 'connection refused' or security warning - this is EXPECTED!");
-            System.out.println(
-                    "6. Copy the COMPLETE URL from your browser's address bar");
-
-            System.out.println(
-                    "\n============================================================");
-            System.out.println("STEP 2: Paste Redirect URL");
-            System.out.println(
-                    "============================================================");
-            System.out.print("Paste the full redirect URL here: ");
-            String redirectUrl = scanner.nextLine().trim();
-
-            if (redirectUrl.isEmpty())
-            {
-                System.err.println("No URL provided.");
-                return;
-            }
-
-            System.out.println("Extracting authorization code from URL...");
-            String authCode = client.extractAuthorizationCode(redirectUrl);
-            if (authCode == null)
-            {
-                System.err.println(
-                        "Failed to extract authorization code from the URL.");
-                System.err.println(
-                        "Make sure you copied the complete URL including the ?code= parameter");
-                System.err.println(
-                        "Expected format: " + config.getRedirectUri() + "?code=XXXXXX");
-                return;
-            }
-            System.out.println("Authorization code extracted successfully!");
-
-            System.out.println("Exchanging authorization code for tokens...");
-            TokenResponse tokens = client.getTokens(config.getAppKey(), config.
-                    getAppSecret(),
-                    authCode, config.getRedirectUri());
-
-            // Save all tokens to the main JSON file
-            tokenManager.saveTokensInstance(tokens);
-
-            // Save the refresh token separately for the refresher to find
-            try
-            {
-                Path refreshTokenPath = Paths.get(tokenManager.
-                        getRefreshTokenFile());
-                Files.writeString(refreshTokenPath, tokens.getRefreshToken());
-            }
-            catch (IOException e)
-            {
-                logger.error("Failed to write refresh token to file: {}", e.
-                        getMessage());
-                System.err.println(
-                        "Warning: Failed to save refresh token to file. Automated refresh may not work.");
-            }
-
-            System.out.println("\nSUCCESS! Tokens acquired and saved.");
-            System.out.println("Access token expires at: " + tokens.
-                    getExpiresAt());
-            System.out.println(
-                    "You can now use the API endpoints (option 6, 7, or 8).");
-
-        }
-        catch (Exception e)
-        {
-            System.err.println(
-                    "OAuth error: " + e.getClass().getSimpleName() + ": " + e.
-                    getMessage());
-            logger.error("OAuth process failed", e);
-
-        }
-        finally
-        {
-            if (client != null)
-            {
-                try
-                {
-                    client.close();
-                }
-                catch (Exception e)
-                {
-                    System.err.println(
-                            "Warning: Error closing OAuth client: " + e.
-                                    getMessage());
-                }
-            }
+        try (SchwabOAuthClient client = new SchwabOAuthClient(apiProperties)) {
+            performManualOAuthFlow(scanner, client);
         }
     }
 
-    private void testMarketData()
-    {
+    private void performManualOAuthFlow(Scanner scanner, SchwabOAuthClient client) throws SchwabApiException {
+        System.out.println("============================================================");
+        System.out.println("STEP 1: Browser Authorization");
+        System.out.println("============================================================");
+
+        String authUrl = client.buildAuthorizationUrl(config.getAppKey(), config.getRedirectUri());
+
+        System.out.println("\nPlease manually open this URL in your browser:");
+        System.out.println("=".repeat(80));
+        System.out.println(authUrl);
+        System.out.println("=".repeat(80));
+
+        System.out.println("\nInstructions:");
+        System.out.println("1. Copy the URL above and paste it into your browser");
+        System.out.println("2. Log into your Schwab account");
+        System.out.println("3. Review and approve the API permissions");
+        System.out.println("4. Copy the COMPLETE redirect URL from your browser's address bar");
+
+        System.out.println("\n============================================================");
+        System.out.println("STEP 2: Paste Redirect URL");
+        System.out.println("============================================================");
+        System.out.print("Paste the full redirect URL here: ");
+        String redirectUrl = scanner.nextLine().trim();
+
+        if (redirectUrl.isEmpty()) {
+            throw SchwabApiException.validationError("No URL provided");
+        }
+
+        String authCode = client.extractAuthorizationCode(redirectUrl);
+        if (authCode == null) {
+            throw SchwabApiException.validationError(
+                "Failed to extract authorization code. Ensure you copied the complete URL with ?code= parameter");
+        }
+
+        System.out.println("Authorization code extracted successfully!");
+        System.out.println("Exchanging authorization code for tokens...");
+
+        TokenResponse tokens = client.getTokens(
+                config.getAppKey(), 
+                config.getAppSecret(),
+                authCode, 
+                config.getRedirectUri()
+        );
+
+        saveTokensAndComplete(tokens);
+    }
+
+    private void testMarketData() throws SchwabApiException {
         System.out.println("\n--- Testing Market Data API ---");
 
-        // Ensure service is ready with automated refresh
-        if (!marketDataService.ensureServiceReady("testMarketData"))
-        {
+        if (!marketDataService.ensureServiceReady("testMarketData")) {
+            System.out.println("Service not ready. Please ensure tokens are valid.");
             return;
         }
 
-        // Test 1: Check market hours first
+        testMarketHours();
+        testQuoteSymbols();
+        testBatchQuotes();
+        displayMarketDataSummary();
+    }
+
+    private void testMarketHours() {
         System.out.println("\nTesting market hours...");
-        try
-        {
+        try {
             var marketHours = marketDataService.getMarketHours("equity");
-            System.out.println(
-                    "Market hours request successful. Status: " + marketHours.
-                            getStatusCode());
-            if (marketHours.getStatusCode() == 200)
-            {
-                System.out.println("Market hours data length: " + marketHours.
-                        getBody().length() + " characters");
-                // Show first 200 characters of response for debugging
+            System.out.println("Market hours request successful. Status: " + marketHours.getStatusCode());
+            
+            if (marketHours.getStatusCode() == 200) {
                 String body = marketHours.getBody();
-                if (body.length() > 200)
-                {
-                    System.out.println("Market hours sample: " + body.substring(
-                            0, 200) + "...");
+                System.out.println("Market hours data length: " + body.length() + " characters");
+                
+                if (body.length() > 200) {
+                    System.out.println("Sample: " + body.substring(0, 200) + "...");
+                } else {
+                    System.out.println("Data: " + body);
                 }
-                else
-                {
-                    System.out.println("Market hours data: " + body);
-                }
+            } else {
+                System.out.println("Error: " + marketHours.getBody());
             }
-            else
-            {
-                System.out.println("Market hours error: " + marketHours.
-                        getBody());
-            }
-        }
-        catch (Exception e)
-        {
+        } catch (SchwabApiException e) {
+            System.err.println("Market hours error: " + e.getDisplayMessage());
+        } catch (Exception e) {
             System.err.println("Market hours test failed: " + e.getMessage());
         }
+    }
 
-        // Test 2: Try multiple symbols with different formats
+    private void testQuoteSymbols() throws SchwabApiException {
         System.out.println("\nTesting quotes for multiple symbols...");
-        String[] symbolsToTest =
-        {
-            "AAPL", "MSFT", "GOOGL", "TSLA", "SPY"
-        };
+        String[] symbolsToTest = {"AAPL", "MSFT", "GOOGL", "TSLA", "SPY"};
 
-        for (String symbol : symbolsToTest)
-        {
+        for (String symbol : symbolsToTest) {
             System.out.println("\nTesting symbol: " + symbol);
-            try
-            {
+            try {
                 QuoteData quote = marketDataService.getQuote(symbol);
                 System.out.println("  Result: " + quote.getStatus());
 
-                if (quote.isSuccess())
-                {
-                    System.out.println("  SUCCESS - Close Price: $" + quote.
-                            getClosePrice());
+                if (quote.isSuccess()) {
+                    System.out.println("  SUCCESS - Close Price: $" + quote.getClosePrice());
                     System.out.println("  Volume: " + quote.getTotalVolume());
-                    break; // Found a working symbol, stop testing
-                }
-                else
-                {
+                    break; // Found working symbol
+                } else {
                     System.out.println("  FAILED - " + quote.getErrorMessage());
                 }
-
-            }
-            catch (Exception e)
-            {
-                System.err.println("  ERROR: " + e.getMessage());
+            } catch (SchwabApiException e) {
+                System.err.println("  API ERROR: " + e.getDisplayMessage());
             }
         }
-
-        // Test 3: Try a batch quote request
-        System.out.println("\nTesting batch quote request...");
-        try
-        {
-            List<QuoteData> quotes = marketDataService.getQuotes(List.of("AAPL",
-                    "MSFT"));
-            System.out.println(
-                    "Batch quote request returned " + quotes.size() + " results:");
-            for (QuoteData quote : quotes)
-            {
-                System.out.println("  " + quote.getSymbol() + ": " + quote.
-                        getStatus()
-                        + (quote.isSuccess() ? " ($" + quote.getClosePrice() + ")" : " - " + quote.
-                        getErrorMessage()));
-            }
-        }
-        catch (Exception e)
-        {
-            System.err.println("Batch quote test failed: " + e.getMessage());
-        }
-
-        System.out.println("\n--- Market Data Test Complete ---");
-        System.out.println(
-                "Note: If all symbols return 'NOT_FOUND', this might be due to:");
-        System.out.println("  • Market being closed (try during trading hours)");
-        System.out.println("  • API endpoint requiring different symbol format");
-        System.out.println("  • Sandbox vs production API differences");
-        System.out.println(
-                "  • Insufficient API permissions in your Schwab app registration");
-        System.out.println(
-                "  • Need to request 'market data' scope in addition to 'readonly'");
     }
 
-    private void testHistoricalData(Scanner scanner)
-    {
+    private void testBatchQuotes() throws SchwabApiException {
+        System.out.println("\nTesting batch quote request...");
+        try {
+            List<QuoteData> quotes = marketDataService.getQuotes(List.of("AAPL", "MSFT"));
+            System.out.println("Batch quote request returned " + quotes.size() + " results:");
+            
+            for (QuoteData quote : quotes) {
+                String result = quote.getSymbol() + ": " + quote.getStatus();
+                if (quote.isSuccess()) {
+                    result += " ($" + quote.getClosePrice() + ")";
+                } else {
+                    result += " - " + quote.getErrorMessage();
+                }
+                System.out.println("  " + result);
+            }
+        } catch (SchwabApiException e) {
+            System.err.println("Batch quote error: " + e.getDisplayMessage());
+        }
+    }
+
+    private void displayMarketDataSummary() {
+        System.out.println("\n--- Market Data Test Complete ---");
+        System.out.println("Note: If symbols return 'NOT_FOUND', check:");
+        System.out.println("  • Market hours (try during trading hours)");
+        System.out.println("  • API permissions in Schwab Developer Portal");
+        System.out.println("  • App approval status");
+    }
+
+    private void testHistoricalData(Scanner scanner) throws SchwabApiException {
         System.out.println("\n--- Testing Historical Data API ---");
 
-        // Ensure service is ready with automated refresh
-        if (!marketDataService.ensureServiceReady("testHistoricalData"))
-        {
+        if (!marketDataService.ensureServiceReady("testHistoricalData")) {
             return;
         }
 
-        System.out.print(
-                "Enter ticker symbols (comma-separated, e.g., AAPL,MSFT,GOOGL): ");
-        String symbolsInput = scanner.nextLine().trim();
-        if (symbolsInput.isEmpty())
-        {
-            symbolsInput = "AAPL,MSFT,GOOGL,TSLA,SPY"; // Default symbols
-            System.out.println(
-                    "No symbols entered, using default: " + symbolsInput);
+        System.out.print("Enter ticker symbol (default: AAPL): ");
+        String symbolInput = scanner.nextLine().trim();
+        if (symbolInput.isEmpty()) {
+            symbolInput = "AAPL";
         }
 
-        String[] symbols = symbolsInput.split(",");
-        for (int i = 0; i < symbols.length; i++)
-        {
-            symbols[i] = symbols[i].trim().toUpperCase();
-        }
+        String symbol = symbolInput.toUpperCase();
+        System.out.println("\nFetching 30 days of historical data for: " + symbol);
 
-        System.out.println(
-                "\nFetching 30 days of historical data for " + symbols.length + " symbols...");
-        System.out.println("Base Market Data URL: " + config.getUrls().
-                getMarketData());
-
-        // Test historical data for each symbol
-        for (String symbol : symbols)
-        {
-            System.out.println("\n" + "=".repeat(60));
-            System.out.println(
-                    "Historical Data for " + symbol + " (30 days)");
-            System.out.println("=".repeat(60));
-
-            try
-            {
-                String expectedUrl = String.format(
-                        "%s/pricehistory?symbol=%s&periodType=month&period=1&frequencyType=daily&frequency=1&needPreviousClose=true",
-                        config.getUrls().getMarketData(), symbol
-                );
-                System.out.println("Expected URL: " + expectedUrl);
-
-                var response1 = marketDataService.getPriceHistory(
-                        symbol,
-                        "month", // period type
-                        1, // number of periods
-                        "daily", // frequencyType
-                        1 // frequency
-                );
-
-                System.out.println("Response Status: " + response1.
-                        getStatusCode());
-                if (response1.getStatusCode() != 200)
-                {
-                    System.out.println("Response Body: " + response1.getBody());
-                }
-
-                // Process successful response
-                if (response1.getStatusCode() == 200)
-                {
-                    String responseBody = response1.getBody();
-                    System.out.println(
-                            "SUCCESS! Response Length: " + responseBody.
-                                    length() + " characters");
-
-                    // Parse and display key information
-                    if (responseBody.contains("candles"))
-                    {
-                        // Count candles (data points)
-                        int candleCount = countOccurrences(responseBody,
-                                "\"open\":");
-                        System.out.println("Data Points Found: " + candleCount);
-
-                        // Show first few characters for inspection
-                        if (responseBody.length() > 500)
-                        {
-                            System.out.println("Sample Data (first 500 chars):");
-                            System.out.println(
-                                    responseBody.substring(0, 500) + "...");
-                        }
-                        else
-                        {
-                            System.out.println("Full Response:");
-                            System.out.println(responseBody);
-                        }
-
-                        // Extract some basic info if possible
-                        if (responseBody.contains("\"symbol\":"))
-                        {
-                            System.out.println("✓ Symbol confirmed in response");
-                        }
-                        if (responseBody.contains("\"empty\":false"))
-                        {
-                            System.out.println("✓ Data available (not empty)");
-                        }
-                        if (responseBody.contains("\"empty\":true"))
-                        {
-                            System.out.println(
-                                    "⚠ No data available (empty response)");
-                        }
-
-                    }
-                    else
-                    {
-                        System.out.println(
-                                "⚠ Unexpected response format - no candles found");
-                        System.out.println("Raw response: " + responseBody);
-                    }
-                }
-                else
-                {
-                    System.out.println(
-                            "⚠ All parameter combinations failed with 404");
-                    System.out.println(
-                            "This suggests the endpoint URL structure might be wrong");
-                }
-
+        try {
+            var response = marketDataService.getPriceHistory(symbol, "month", 1, "daily", 1);
+            
+            System.out.println("Response Status: " + response.getStatusCode());
+            
+            if (response.getStatusCode() == 200) {
+                analyzeHistoricalResponse(symbol, response.getBody());
+            } else {
+                System.out.println("Error Response: " + response.getBody());
             }
-            catch (SchwabApiException | IOException e)
-            {
-                System.err.println("⚠ Exception for " + symbol + ": " + e.
-                        getMessage());
-                if (e.getCause() != null)
-                {
-                    System.err.println("   Caused by: " + e.getCause().
-                            getMessage());
-                }
-            }
+            
+        } catch (SchwabApiException e) {
+            System.err.println("Historical data error: " + e.getDisplayMessage());
+            System.err.println("Recommended Action: " + e.getRecommendedAction());
         }
-
-        // Summary
-        System.out.println(
-                "\n" + "=".repeat(60));
-        System.out.println(
-                "HISTORICAL DATA TEST SUMMARY");
-        System.out.println(
-                "=".repeat(60));
-        System.out.println(
-                "Requested: 30 days of data for " + symbols.length + " symbols");
-        System.out.println(
-                "Symbols tested: " + String.join(", ", symbols));
-
-        System.out.println(
-                "\nTroubleshooting Notes:");
-        System.out.println(
-                "• 404 errors usually indicate wrong URL format or missing API permissions");
-        System.out.println(
-                "• Check your Schwab Developer Portal app has 'Market Data Production' enabled");
-        System.out.println(
-                "• Verify your app is fully approved (not just 'Approved - Pending')");
-        System.out.println(
-                "• The endpoint might expect different URL structure than /pricehistory/{symbol}");
-        System.out.println(
-                "• Try testing with different parameter combinations above");
-
     }
 
-    private int countOccurrences(String str, String substring)
-    {
+    private void analyzeHistoricalResponse(String symbol, String responseBody) {
+        System.out.println("SUCCESS! Response Length: " + responseBody.length() + " characters");
+
+        if (responseBody.contains("candles")) {
+            int candleCount = countOccurrences(responseBody, "\"open\":");
+            System.out.println("Data Points Found: " + candleCount);
+
+            if (responseBody.length() > 500) {
+                System.out.println("Sample Data: " + responseBody.substring(0, 500) + "...");
+            } else {
+                System.out.println("Full Response: " + responseBody);
+            }
+
+            if (responseBody.contains("\"empty\":false")) {
+                System.out.println("✓ Data available");
+            } else if (responseBody.contains("\"empty\":true")) {
+                System.out.println("⚠ No data available");
+            }
+        } else {
+            System.out.println("⚠ Unexpected response format");
+        }
+    }
+
+    private int countOccurrences(String str, String substring) {
         int count = 0;
         int index = 0;
-        while ((index = str.indexOf(substring, index)) != -1)
-        {
+        while ((index = str.indexOf(substring, index)) != -1) {
             count++;
             index += substring.length();
         }
         return count;
     }
 
-    private void testAutomatedRefresh()
-    {
+    private void testAutomatedRefresh() throws SchwabApiException {
         System.out.println("\n--- Testing Automated Token Refresh (Forced) ---");
-        System.out.println(
-                "This option will force a token refresh regardless of current token validity.");
 
-        // First, show current token status
-        System.out.println(
-                "STEP 1: Current token status before forced refresh...");
-        try
-        {
-            TokenResponse currentTokens = tokenManager.loadTokensInstance(false);
-            if (currentTokens == null)
-            {
-                System.out.println(
-                        "ERROR: No tokens found. Please run OAuth authorization first (option 2).");
-                return;
-            }
-
-            System.out.println("Current token details:");
-            System.out.println("  Access token valid: " + currentTokens.
-                    isAccessTokenValid());
-            System.out.println("  Refresh token valid: " + currentTokens.
-                    isRefreshTokenValid());
-            System.out.println("  Access expires in: " + currentTokens.
-                    getSecondsUntilAccessExpiry() + " seconds");
-            System.out.println("  Refresh expires in: " + currentTokens.
-                    getSecondsUntilRefreshExpiry() + " seconds");
-            System.out.println("  Current expires at: " + currentTokens.
-                    getExpiresAt());
-
-            if (!currentTokens.isRefreshTokenValid())
-            {
-                System.out.println(
-                        "ERROR: Refresh token is invalid - cannot force refresh");
-                System.out.println(
-                        "Please run OAuth authorization first (option 2)");
-                return;
-            }
-
+        TokenResponse currentTokens = tokenManager.loadTokensInstance(false);
+        if (currentTokens == null) {
+            throw SchwabApiException.notFound("No tokens found. Please run OAuth authorization first (option 2).");
         }
-        catch (Exception e)
-        {
-            System.err.println("Error checking current token status: " + e.
-                    getMessage());
-            return;
+
+        System.out.println("STEP 1: Current token status");
+        displayTokenStatus(currentTokens);
+
+        if (!currentTokens.isRefreshTokenValid()) {
+            throw SchwabApiException.tokenError("Refresh token is invalid - cannot force refresh");
         }
 
         System.out.println("\nSTEP 2: Forcing token refresh...");
-        try
-        {
-            // Use the existing force refresh method
-            TokenResponse refreshedTokens = tokenManager.
-                    forceTokenRefreshInstance();
+        
+        TokenResponse refreshedTokens = tokenManager.forceTokenRefreshInstance();
+        
+        System.out.println("SUCCESS: Token refresh completed");
+        displayTokenStatus(refreshedTokens);
 
-            if (refreshedTokens != null)
-            {
-                System.out.println("SUCCESS: Forced token refresh completed");
-                System.out.println("Post-refresh token details:");
-                System.out.println(
-                        "  New access token valid: " + refreshedTokens.
-                                isAccessTokenValid());
-                System.out.println(
-                        "  New refresh token valid: " + refreshedTokens.
-                                isRefreshTokenValid());
-                System.out.println(
-                        "  New access expires at: " + refreshedTokens.
-                                getExpiresAt());
-                System.out.println(
-                        "  New refresh expires at: " + refreshedTokens.
-                                getRefreshTokenExpiresAt());
-                System.out.println("  New expires in: " + refreshedTokens.
-                        getSecondsUntilAccessExpiry() + " seconds");
-                System.out.println("  Token source: " + refreshedTokens.
-                        getSource());
+        System.out.println("\nSTEP 3: Verifying refreshed tokens...");
+        String marketServiceStatus = marketDataService.getTokenStatus();
+        System.out.println("Market service status: " + marketServiceStatus);
+        System.out.println("Market service ready: " + marketDataService.isReady());
+    }
 
-                // Verify the refreshed token works with API
-                System.out.println(
-                        "\nSTEP 3: Verifying refreshed tokens work with API...");
-                String marketServiceStatus = marketDataService.getTokenStatus();
-                System.out.println(
-                        "Market service status: " + marketServiceStatus);
-                System.out.println("Market service ready: " + marketDataService.
-                        isReady());
-
-            }
-            else
-            {
-                System.out.println("ERROR: Force refresh returned null");
-            }
-
-        }
-        catch (Exception e)
-        {
-            System.err.println("FAILURE: Forced refresh failed");
-            System.err.println("Error: " + e.getMessage());
-            System.err.println("Error type: " + e.getClass().getSimpleName());
-
-            if (e instanceof SchwabApiException)
-            {
-                SchwabApiException apiEx = (SchwabApiException) e;
-                System.err.println("Status Code: " + apiEx.getStatusCode());
-                System.err.println("Error Code: " + apiEx.getErrorCode());
-                System.err.println("Recommended Action: " + apiEx.
-                        getRecommendedAction());
-            }
-
-            logger.error("Forced refresh test failed", e);
-
-            System.out.println("\nTroubleshooting:");
-            System.out.println("1. Check appKey/appSecret in application.yml");
-            System.out.println("2. Verify refresh token hasn't expired");
-            System.out.println("3. Check network connectivity to Schwab API");
-            System.out.println(
-                    "4. If all else fails, run OAuth authorization again (option 2)");
+    private void displayTokenStatus(TokenResponse tokens) {
+        System.out.println("  Access token valid: " + tokens.isAccessTokenValid());
+        System.out.println("  Refresh token valid: " + tokens.isRefreshTokenValid());
+        System.out.println("  Access expires in: " + tokens.getSecondsUntilAccessExpiry() + " seconds");
+        System.out.println("  Access expires at: " + tokens.getExpiresAt());
+        if (tokens.getSource() != null) {
+            System.out.println("  Token source: " + tokens.getSource());
         }
     }
 
-    private void showConfigurationStatus()
-    {
+    private void showConfigurationStatus() {
         System.out.println("\n--- Configuration Status ---");
-        System.out.println(
-                "App Key Loaded: " + (config.getAppKey() != null && !config.
-                getAppKey().isEmpty()));
-        System.out.println(
-                "App Secret Loaded: " + (config.getAppSecret() != null && !config.
-                getAppSecret().isEmpty()));
-        System.out.println(
-                "Redirect URI Loaded: " + (config.getRedirectUri() != null && !config.
-                getRedirectUri().isEmpty()));
-        System.out.println("\nToken Files Status:");
-        System.out.println("  " + tokenManager.getTokenPropertiesFile() + ": "
-                + (new File(tokenManager.getTokenPropertiesFile()).exists() ? "EXISTS" : "MISSING"));
-        System.out.println("  " + tokenManager.getRefreshTokenFile() + ": "
-                + (new File(tokenManager.getRefreshTokenFile()).exists() ? "EXISTS" : "MISSING"));
+        
+        System.out.println("Credentials:");
+        System.out.println("  App Key: " + (config.getAppKey() != null ? "LOADED" : "MISSING"));
+        System.out.println("  App Secret: " + (config.getAppSecret() != null ? "LOADED" : "MISSING"));
+        
+        System.out.println("\nToken Files:");
+        System.out.println("  " + tokenManager.getTokenPropertiesFile() + ": " + 
+            (Files.exists(Paths.get(tokenManager.getTokenPropertiesFile())) ? "EXISTS" : "MISSING"));
+        System.out.println("  " + tokenManager.getRefreshTokenFile() + ": " + 
+            (Files.exists(Paths.get(tokenManager.getRefreshTokenFile())) ? "EXISTS" : "MISSING"));
 
-        System.out.println("\nFull Configuration:");
-        config.showConfig();
+        System.out.println("\nAPI Endpoints:");
+        System.out.println("  Auth URL: " + config.getUrls().getAuth());
+        System.out.println("  Token URL: " + config.getUrls().getToken());
+        System.out.println("  Market Data URL: " + config.getUrls().getMarketData());
+        System.out.println("  Redirect URI: " + config.getDefaults().getRedirectUri());
 
-        System.out.println("\nURL Configuration:");
-        try
-        {
-            System.out.println(
-                    "  Auth URL: " + (config.getUrls() != null ? config.
-                    getUrls().getAuth() : "NULL"));
-            System.out.println(
-                    "  Token URL: " + (config.getUrls() != null ? config.
-                    getUrls().getToken() : "NULL"));
-            System.out.println(
-                    "  Market Data URL: " + (config.getUrls() != null ? config.
-                    getUrls().getMarketData() : "NULL"));
-            System.out.println(
-                    "  Redirect URI: " + (config.getDefaults() != null ? config.
-                    getDefaults().getRedirectUri() : "NULL"));
-        }
-        catch (Exception e)
-        {
-            System.err.println("Error accessing URL configuration: " + e.
-                    getMessage());
-        }
-
-        // Quick token status check
-        System.out.println("\nQuick Token Status:");
-        String tokenStatus = marketDataService.getTokenStatus();
-        System.out.println("  Service Status: " + tokenStatus);
+        System.out.println("\nService Status:");
+        System.out.println("  Token Status: " + marketDataService.getTokenStatus());
         System.out.println("  Service Ready: " + marketDataService.isReady());
     }
 }

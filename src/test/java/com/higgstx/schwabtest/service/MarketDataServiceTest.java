@@ -1,6 +1,7 @@
 package com.higgstx.schwabtest.service;
 
 import com.higgstx.schwabapi.config.SchwabApiProperties;
+import com.higgstx.schwabapi.exception.*;
 import com.higgstx.schwabapi.service.MarketDataService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class MarketDataServiceTest
     private String originalTokenContent = null;
 
     @BeforeEach
-    void setUp()
+    void setUp() throws SchwabApiException
     {
         // Backup and remove token file to ensure clean test environment
         backupAndRemoveTokenFile();
