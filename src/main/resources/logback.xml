@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <!-- Console appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
     
     <!-- File appender for application logs -->
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
@@ -11,18 +17,18 @@
     </appender>
     
     <!-- Rolling file appender for application logs -->
-   <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>logs/schwab-oauth-client.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-        <fileNamePattern>logs/schwab-oauth-client.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-        <maxFileSize>10MB</maxFileSize>
-        <maxHistory>30</maxHistory>
-        <totalSizeCap>300MB</totalSizeCap>
-    </rollingPolicy>
-    <encoder>
-        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-</appender>
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/schwab-oauth-client.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/schwab-oauth-client.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>300MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
     
     <!-- Debug file appender for detailed HTTP logs -->
     <appender name="DEBUG_FILE" class="ch.qos.logback.core.FileAppender">
@@ -41,19 +47,29 @@
         <includeCallerData>false</includeCallerData>
     </appender>
     
-    <!-- Logger for our application -->
-    <logger name="com.higgstx.schwab" level="INFO" additivity="false">
+    <!-- Logger for test harness application - CHANGED TO DEBUG -->
+    <logger name="com.higgstx.schwab" level="DEBUG" additivity="false">
         <appender-ref ref="ASYNC_FILE"/>
         <appender-ref ref="DEBUG_FILE"/>
+        <appender-ref ref="CONSOLE"/>
     </logger>
     
-    <!-- Logger for OkHttp (HTTP requests/responses) -->
-    <logger name="okhttp3" level="WARN" additivity="false">
+    <!-- Logger for API library - CHANGED TO DEBUG -->
+    <logger name="com.higgstx.schwabapi" level="DEBUG" additivity="false">
+        <appender-ref ref="ASYNC_FILE"/>
         <appender-ref ref="DEBUG_FILE"/>
+        <appender-ref ref="CONSOLE"/>
     </logger>
     
-    <!-- Root logger - NO console output -->
-    <root level="WARN">
+    <!-- Logger for OkHttp (HTTP requests/responses) - CHANGED TO DEBUG -->
+    <logger name="okhttp3" level="DEBUG" additivity="false">
+        <appender-ref ref="DEBUG_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC_FILE"/>
     </root>
     

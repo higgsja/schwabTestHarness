@@ -1,4 +1,4 @@
-//v21
+//v24 - Complete file with working bulk historical data test
 package com.higgstx.schwabtest.debug;
 
 import com.higgstx.schwabapi.config.SchwabOAuthClient;
@@ -8,6 +8,7 @@ import com.higgstx.schwabapi.model.TokenResponse;
 import com.higgstx.schwabapi.service.TokenManager;
 import com.higgstx.schwabapi.service.MarketDataService;
 import com.higgstx.schwabapi.model.market.QuoteData;
+import com.higgstx.schwabapi.model.market.DailyPriceData;
 import com.higgstx.schwabapi.server.OkHttpSSLServer;
 import com.higgstx.schwabtest.config.SchwabTestConfig;
 import org.slf4j.Logger;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class TestHarnessRunner implements CommandLineRunner
@@ -86,6 +89,9 @@ public class TestHarnessRunner implements CommandLineRunner
                         testHistoricalData(scanner);
                         break;
                     case "8":
+                        testBulkHistoricalData(scanner);
+                        break;
+                    case "9":
                         System.out.println("Exiting. Goodbye!");
                         scanner.close();
                         return;
@@ -106,21 +112,267 @@ public class TestHarnessRunner implements CommandLineRunner
     }
 
     private void displayMenu()
-{
-    System.out.println("============================================================");
-    System.out.println("MAIN MENU - Select an option:");
-    System.out.println("============================================================");
-    System.out.println("1. Configuration Status");
-    System.out.println("2. Automatic OAuth Authorization (HTTPS)");
-    System.out.println("3. Manual OAuth Authorization (fallback)");
-    System.out.println("4. Check Token Status");
-    System.out.println("5. Test Automated Refresh (Forced)");
-    System.out.println("6. Test Market Data API");
-    System.out.println("7. Test Historical Data");
-    System.out.println("8. Exit");
-    System.out.println("============================================================");
-    System.out.print("Enter your choice (1-9): ");
-}
+    {
+        System.out.println(
+                "============================================================");
+        System.out.println("MAIN MENU - Select an option:");
+        System.out.println(
+                "============================================================");
+        System.out.println("1. Configuration Status");
+        System.out.println("2. Automatic OAuth Authorization (HTTPS)");
+        System.out.println("3. Manual OAuth Authorization (fallback)");
+        System.out.println("4. Check Token Status");
+        System.out.println("5. Test Automated Refresh (Forced)");
+        System.out.println("6. Test Market Data API");
+        System.out.println("7. Test Historical Data (Individual)");
+        System.out.println("8. Test Bulk Historical Data");
+        System.out.println("9. Exit");
+        System.out.println(
+                "============================================================");
+        System.out.print("Enter your choice (1-9): ");
+    }
+
+    private void testBulkHistoricalData(Scanner scanner)
+    {
+        System.out.println("\n--- Testing Bulk Historical Data API ---");
+        System.out.println(
+                "This test uses the getBulkHistoricalData method to fetch 30 days of data for multiple symbols in a single call.");
+
+        // Ensure service is ready with automated refresh
+        if (!marketDataService.ensureServiceReady("testBulkHistoricalData"))
+        {
+            return;
+        }
+
+        System.out.print(
+                "Enter ticker symbols (comma-separated, e.g., AAPL,MSFT,GOOGL): ");
+        String symbolsInput = scanner.nextLine().trim();
+        if (symbolsInput.isEmpty())
+        {
+            symbolsInput = "AAPL,MSFT,GOOGL,TSLA,SPY"; // Default symbols
+            System.out.println(
+                    "No symbols entered, using default: " + symbolsInput);
+        }
+
+        String[] symbols = symbolsInput.split(",");
+        for (int i = 0; i < symbols.length; i++)
+        {
+            symbols[i] = symbols[i].trim().toUpperCase();
+        }
+
+        System.out.println(
+                "\n" + "=".repeat(70));
+        System.out.println(
+                "BULK HISTORICAL DATA TEST");
+        System.out.println(
+                "=".repeat(70));
+        System.out.println("Symbols to fetch: " + String.join(", ", symbols));
+        System.out.println("Period: 30 days (1 month of daily data)");
+        System.out.println("Method: getBulkHistoricalData()");
+        System.out.println(
+                "Expected behavior: Single method call fetches data for all symbols");
+
+        long startTime = System.currentTimeMillis();
+
+        try
+        {
+            System.out.println("\nCalling getBulkHistoricalData...");
+            List<DailyPriceData> bulkData = marketDataService.
+                    getBulkHistoricalData(symbols);
+
+            long endTime = System.currentTimeMillis();
+            long totalTime = endTime - startTime;
+
+            System.out.println("\n" + "=".repeat(70));
+            System.out.println("BULK FETCH RESULTS");
+            System.out.println("=".repeat(70));
+            System.out.println("Total time: " + totalTime + "ms");
+            System.out.println("Total data points returned: " + bulkData.size());
+            System.out.println("Symbols requested: " + symbols.length);
+
+            // Analyze results by symbol
+            Map<String, List<DailyPriceData>> dataBySymbol = bulkData.stream()
+                    .collect(Collectors.groupingBy(DailyPriceData::getSymbol));
+
+            System.out.println("\nResults by symbol:");
+            System.out.println("-".repeat(50));
+
+            for (String symbol : symbols)
+            {
+                List<DailyPriceData> symbolData = dataBySymbol.get(symbol);
+
+                if (symbolData == null || symbolData.isEmpty())
+                {
+                    System.out.println(symbol + ": No data returned");
+                    continue;
+                }
+
+                // Count successful vs error data points
+                long successCount = symbolData.stream().filter(
+                        DailyPriceData::isSuccess).count();
+                long errorCount = symbolData.size() - successCount;
+
+                System.out.println(symbol + ":");
+                System.out.println("  Total data points: " + symbolData.size());
+                System.out.println("  Successful: " + successCount);
+                System.out.println("  Errors: " + errorCount);
+
+                if (successCount > 0)
+                {
+                    // Show sample successful data
+                    DailyPriceData sample = symbolData.stream()
+                            .filter(DailyPriceData::isSuccess)
+                            .findFirst().orElse(null);
+
+                    if (sample != null)
+                    {
+                        System.out.println("  Sample data:");
+                        System.out.println("    Date: " + sample.getLocalDate());
+                        System.out.println("    Open: $" + sample.getOpen());
+                        System.out.println("    High: $" + sample.getHigh());
+                        System.out.println("    Low: $" + sample.getLow());
+                        System.out.println("    Close: $" + sample.getClose());
+                        System.out.println("    Volume: " + formatVolume(sample.
+                                getVolume()));
+                    }
+
+                    // Show date range
+                    List<DailyPriceData> successfulData = symbolData.stream()
+                            .filter(DailyPriceData::isSuccess)
+                            .sorted((a, b) -> a.getLocalDate().compareTo(b.
+                            getLocalDate()))
+                            .collect(Collectors.toList());
+
+                    if (successfulData.size() > 1)
+                    {
+                        System.out.println("  Date range: "
+                                + successfulData.get(0).getLocalDate() + " to "
+                                + successfulData.get(successfulData.size() - 1).
+                                        getLocalDate());
+                    }
+                }
+                else if (errorCount > 0)
+                {
+                    // Show error message
+                    DailyPriceData errorSample = symbolData.stream()
+                            .filter(data -> !data.isSuccess())
+                            .findFirst().orElse(null);
+
+                    if (errorSample != null && errorSample.getErrorMessage() != null)
+                    {
+                        System.out.println("  Error: " + errorSample.
+                                getErrorMessage());
+                    }
+                }
+                System.out.println();
+            }
+
+            // Performance analysis
+            System.out.println("PERFORMANCE ANALYSIS:");
+            System.out.println("-".repeat(50));
+            System.out.println(
+                    "Average time per symbol: " + (totalTime / symbols.length) + "ms");
+            System.out.println("Data points per second: "
+                    + (bulkData.size() * 1000 / Math.max(totalTime, 1)));
+
+            // Data quality analysis
+            long totalSuccessful = bulkData.stream().filter(
+                    DailyPriceData::isSuccess).count();
+            long totalErrors = bulkData.size() - totalSuccessful;
+            double successRate = (double) totalSuccessful / bulkData.size() * 100;
+
+            System.out.println("\nDATA QUALITY:");
+            System.out.println("-".repeat(50));
+            System.out.println("Success rate: " + String.format("%.1f%%",
+                    successRate));
+            System.out.println("Successful data points: " + totalSuccessful);
+            System.out.println("Failed data points: " + totalErrors);
+
+            // Show recent data points from successful fetches
+            if (totalSuccessful > 0)
+            {
+                System.out.println("\nMOST RECENT DATA SAMPLES:");
+                System.out.println("-".repeat(50));
+
+                bulkData.stream()
+                        .filter(DailyPriceData::isSuccess)
+                        .sorted((a, b) -> b.getLocalDate().compareTo(a.
+                        getLocalDate())) // Most recent first
+                        .limit(5)
+                        .forEach(data ->
+                        {
+                            System.out.println(data.getSymbol() + " (" + data.
+                                    getLocalDate() + "): "
+                                    + "Close $" + data.getClose() + ", Volume " + formatVolume(
+                                    data.getVolume()));
+                        });
+            }
+
+        }
+        catch (IOException e)
+        {
+            System.err.println("Network/IO Error during bulk fetch: " + e.
+                    getMessage());
+            logger.error("Bulk historical data test failed", e);
+        }
+        catch (Exception e)
+        {
+            System.err.println("Unexpected error during bulk fetch: " + e.
+                    getMessage());
+            logger.error("Bulk historical data test failed", e);
+        }
+
+        System.out.println("\n" + "=".repeat(70));
+        System.out.println("BULK HISTORICAL DATA TEST COMPLETE");
+        System.out.println("=".repeat(70));
+
+        System.out.println("Notes about this test:");
+        System.out.println(
+                "• getBulkHistoricalData() makes individual API calls for each symbol");
+        System.out.println(
+                "• Includes 100ms delay between requests to respect API rate limits");
+        System.out.
+                println("• Returns all data in a single List<DailyPriceData>");
+        System.out.println(
+                "• Gracefully handles errors by returning error data objects");
+        System.out.println(
+                "• Fetches 30 days (1 month) of daily OHLCV data per symbol");
+
+        String currentTokenStatus = marketDataService.getTokenStatus();
+        if (currentTokenStatus.contains("ERROR") || !marketDataService.isReady())
+        {
+            System.out.println("\nTroubleshooting:");
+            System.out.println(
+                    "• Token issues detected - try option 4 to check token status");
+            System.out.println(
+                    "• If tokens expired, run option 5 (force refresh) or option 2 (re-auth)");
+        }
+    }
+
+    private String formatVolume(Long volume)
+    {
+        if (volume == null)
+        {
+            return "N/A";
+        }
+
+        if (volume >= 1_000_000_000)
+        {
+            return String.format("%.1fB", volume / 1_000_000_000.0);
+        }
+        else if (volume >= 1_000_000)
+        {
+            return String.format("%.1fM", volume / 1_000_000.0);
+        }
+        else if (volume >= 1_000)
+        {
+            return String.format("%.1fK", volume / 1_000.0);
+        }
+        else
+        {
+            return volume.toString();
+        }
+    }
 
     private void automaticOAuth(Scanner scanner)
     {
@@ -290,7 +542,7 @@ public class TestHarnessRunner implements CommandLineRunner
                 System.out.println("Refresh token expires at: " + tokens.
                         getRefreshTokenExpiresAt());
                 System.out.println(
-                        "You can now use the API endpoints (option 6).");
+                        "You can now use the API endpoints (option 6, 7, or 8).");
 
             }
             catch (Exception e)
@@ -490,7 +742,8 @@ public class TestHarnessRunner implements CommandLineRunner
             System.out.println("\nSUCCESS! Tokens acquired and saved.");
             System.out.println("Access token expires at: " + tokens.
                     getExpiresAt());
-            System.out.println("You can now use the API endpoints (option 6).");
+            System.out.println(
+                    "You can now use the API endpoints (option 6, 7, or 8).");
 
         }
         catch (Exception e)
@@ -523,16 +776,9 @@ public class TestHarnessRunner implements CommandLineRunner
     {
         System.out.println("\n--- Testing Market Data API ---");
 
-        // First check if we have valid tokens
-        System.out.println("Checking token status before API calls...");
-        String tokenStatus = marketDataService.getTokenStatus();
-        System.out.println("Token Status: " + tokenStatus);
-
-        if (!marketDataService.isReady())
+        // Ensure service is ready with automated refresh
+        if (!marketDataService.ensureServiceReady("testMarketData"))
         {
-            System.err.println("Service not ready - no valid tokens available.");
-            System.out.println(
-                    "Please run option 2 (Automatic OAuth Authorization) first.");
             return;
         }
 
@@ -642,16 +888,9 @@ public class TestHarnessRunner implements CommandLineRunner
     {
         System.out.println("\n--- Testing Historical Data API ---");
 
-        // First check if we have valid tokens
-        System.out.println("Checking token status before API calls...");
-        String tokenStatus = marketDataService.getTokenStatus();
-        System.out.println("Token Status: " + tokenStatus);
-
-        if (!marketDataService.isReady())
+        // Ensure service is ready with automated refresh
+        if (!marketDataService.ensureServiceReady("testHistoricalData"))
         {
-            System.err.println("Service not ready - no valid tokens available.");
-            System.out.println(
-                    "Please run option 2 (Automatic OAuth Authorization) first.");
             return;
         }
 
@@ -681,7 +920,7 @@ public class TestHarnessRunner implements CommandLineRunner
         {
             System.out.println("\n" + "=".repeat(60));
             System.out.println(
-                    "Historical Data for " + symbol + "30 days)");
+                    "Historical Data for " + symbol + " (30 days)");
             System.out.println("=".repeat(60));
 
             try
@@ -819,98 +1058,123 @@ public class TestHarnessRunner implements CommandLineRunner
         return count;
     }
 
-   
-
     private void testAutomatedRefresh()
-{
-    System.out.println("\n--- Testing Automated Token Refresh (Forced) ---");
-    System.out.println("This option will force a token refresh regardless of current token validity.");
-    
-    // First, show current token status
-    System.out.println("STEP 1: Current token status before forced refresh...");
-    try
     {
-        TokenResponse currentTokens = tokenManager.loadTokensInstance(false);
-        if (currentTokens == null)
+        System.out.println("\n--- Testing Automated Token Refresh (Forced) ---");
+        System.out.println(
+                "This option will force a token refresh regardless of current token validity.");
+
+        // First, show current token status
+        System.out.println(
+                "STEP 1: Current token status before forced refresh...");
+        try
         {
-            System.out.println("ERROR: No tokens found. Please run OAuth authorization first (option 2).");
+            TokenResponse currentTokens = tokenManager.loadTokensInstance(false);
+            if (currentTokens == null)
+            {
+                System.out.println(
+                        "ERROR: No tokens found. Please run OAuth authorization first (option 2).");
+                return;
+            }
+
+            System.out.println("Current token details:");
+            System.out.println("  Access token valid: " + currentTokens.
+                    isAccessTokenValid());
+            System.out.println("  Refresh token valid: " + currentTokens.
+                    isRefreshTokenValid());
+            System.out.println("  Access expires in: " + currentTokens.
+                    getSecondsUntilAccessExpiry() + " seconds");
+            System.out.println("  Refresh expires in: " + currentTokens.
+                    getSecondsUntilRefreshExpiry() + " seconds");
+            System.out.println("  Current expires at: " + currentTokens.
+                    getExpiresAt());
+
+            if (!currentTokens.isRefreshTokenValid())
+            {
+                System.out.println(
+                        "ERROR: Refresh token is invalid - cannot force refresh");
+                System.out.println(
+                        "Please run OAuth authorization first (option 2)");
+                return;
+            }
+
+        }
+        catch (Exception e)
+        {
+            System.err.println("Error checking current token status: " + e.
+                    getMessage());
             return;
         }
-        
-        System.out.println("Current token details:");
-        System.out.println("  Access token valid: " + currentTokens.isAccessTokenValid());
-        System.out.println("  Refresh token valid: " + currentTokens.isRefreshTokenValid());
-        System.out.println("  Access expires in: " + currentTokens.getSecondsUntilAccessExpiry() + " seconds");
-        System.out.println("  Refresh expires in: " + currentTokens.getSecondsUntilRefreshExpiry() + " seconds");
-        System.out.println("  Current expires at: " + currentTokens.getExpiresAt());
-        
-        if (!currentTokens.isRefreshTokenValid())
+
+        System.out.println("\nSTEP 2: Forcing token refresh...");
+        try
         {
-            System.out.println("ERROR: Refresh token is invalid - cannot force refresh");
-            System.out.println("Please run OAuth authorization first (option 2)");
-            return;
+            // Use the existing force refresh method
+            TokenResponse refreshedTokens = tokenManager.
+                    forceTokenRefreshInstance();
+
+            if (refreshedTokens != null)
+            {
+                System.out.println("SUCCESS: Forced token refresh completed");
+                System.out.println("Post-refresh token details:");
+                System.out.println(
+                        "  New access token valid: " + refreshedTokens.
+                                isAccessTokenValid());
+                System.out.println(
+                        "  New refresh token valid: " + refreshedTokens.
+                                isRefreshTokenValid());
+                System.out.println(
+                        "  New access expires at: " + refreshedTokens.
+                                getExpiresAt());
+                System.out.println(
+                        "  New refresh expires at: " + refreshedTokens.
+                                getRefreshTokenExpiresAt());
+                System.out.println("  New expires in: " + refreshedTokens.
+                        getSecondsUntilAccessExpiry() + " seconds");
+                System.out.println("  Token source: " + refreshedTokens.
+                        getSource());
+
+                // Verify the refreshed token works with API
+                System.out.println(
+                        "\nSTEP 3: Verifying refreshed tokens work with API...");
+                String marketServiceStatus = marketDataService.getTokenStatus();
+                System.out.println(
+                        "Market service status: " + marketServiceStatus);
+                System.out.println("Market service ready: " + marketDataService.
+                        isReady());
+
+            }
+            else
+            {
+                System.out.println("ERROR: Force refresh returned null");
+            }
+
         }
-        
-    }
-    catch (Exception e)
-    {
-        System.err.println("Error checking current token status: " + e.getMessage());
-        return;
-    }
-    
-    System.out.println("\nSTEP 2: Forcing token refresh...");
-    try
-    {
-        // Use the existing force refresh method
-        TokenResponse refreshedTokens = tokenManager.forceTokenRefreshInstance();
-        
-        if (refreshedTokens != null)
+        catch (Exception e)
         {
-            System.out.println("SUCCESS: Forced token refresh completed");
-            System.out.println("Post-refresh token details:");
-            System.out.println("  New access token valid: " + refreshedTokens.isAccessTokenValid());
-            System.out.println("  New refresh token valid: " + refreshedTokens.isRefreshTokenValid());
-            System.out.println("  New access expires at: " + refreshedTokens.getExpiresAt());
-            System.out.println("  New refresh expires at: " + refreshedTokens.getRefreshTokenExpiresAt());
-            System.out.println("  New expires in: " + refreshedTokens.getSecondsUntilAccessExpiry() + " seconds");
-            System.out.println("  Token source: " + refreshedTokens.getSource());
-            
-            // Verify the refreshed token works with API
-            System.out.println("\nSTEP 3: Verifying refreshed tokens work with API...");
-            String marketServiceStatus = marketDataService.getTokenStatus();
-            System.out.println("Market service status: " + marketServiceStatus);
-            System.out.println("Market service ready: " + marketDataService.isReady());
-            
+            System.err.println("FAILURE: Forced refresh failed");
+            System.err.println("Error: " + e.getMessage());
+            System.err.println("Error type: " + e.getClass().getSimpleName());
+
+            if (e instanceof SchwabApiException)
+            {
+                SchwabApiException apiEx = (SchwabApiException) e;
+                System.err.println("Status Code: " + apiEx.getStatusCode());
+                System.err.println("Error Code: " + apiEx.getErrorCode());
+                System.err.println("Recommended Action: " + apiEx.
+                        getRecommendedAction());
+            }
+
+            logger.error("Forced refresh test failed", e);
+
+            System.out.println("\nTroubleshooting:");
+            System.out.println("1. Check appKey/appSecret in application.yml");
+            System.out.println("2. Verify refresh token hasn't expired");
+            System.out.println("3. Check network connectivity to Schwab API");
+            System.out.println(
+                    "4. If all else fails, run OAuth authorization again (option 2)");
         }
-        else
-        {
-            System.out.println("ERROR: Force refresh returned null");
-        }
-        
     }
-    catch (Exception e)
-    {
-        System.err.println("FAILURE: Forced refresh failed");
-        System.err.println("Error: " + e.getMessage());
-        System.err.println("Error type: " + e.getClass().getSimpleName());
-        
-        if (e instanceof SchwabApiException)
-        {
-            SchwabApiException apiEx = (SchwabApiException) e;
-            System.err.println("Status Code: " + apiEx.getStatusCode());
-            System.err.println("Error Code: " + apiEx.getErrorCode());
-            System.err.println("Recommended Action: " + apiEx.getRecommendedAction());
-        }
-        
-        logger.error("Forced refresh test failed", e);
-        
-        System.out.println("\nTroubleshooting:");
-        System.out.println("1. Check appKey/appSecret in application.yml");
-        System.out.println("2. Verify refresh token hasn't expired");
-        System.out.println("3. Check network connectivity to Schwab API");
-        System.out.println("4. If all else fails, run OAuth authorization again (option 2)");
-    }
-}
 
     private void showConfigurationStatus()
     {
