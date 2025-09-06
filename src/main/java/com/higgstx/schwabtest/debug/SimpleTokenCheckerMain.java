@@ -12,13 +12,12 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Simple token health checker for cron jobs - now Spring-aware
+ * Simple token health checker for cron jobs - now Spring-aware with fixed method calls
  */
 @SpringBootApplication(scanBasePackages = "com.higgstx.schwabtest")
 public class SimpleTokenCheckerMain {
     
-    public static void main(String[] args) 
-    throws SchwabApiException {
+    public static void main(String[] args) throws SchwabApiException {
         System.setProperty("spring.main.banner-mode", "off");
         System.setProperty("spring.main.log-startup-info", "false");
         
@@ -35,7 +34,6 @@ public class SimpleTokenCheckerMain {
             SchwabTestConfig config = context.getBean(SchwabTestConfig.class);
             TokenManager tokenManager = new TokenManager(
                 config.getTokenPropertiesFile(),
-                config.getRefreshTokenFile(),
                 config.getAppKey(),
                 config.getAppSecret()
             );
@@ -63,9 +61,21 @@ public class SimpleTokenCheckerMain {
     /**
      * Check token health without Spring context (for lightweight health checks)
      */
-    public static void checkTokenHealthOnlyStandalone()
-    throws SchwabApiException{
-        TokenResponse tokens = TokenManager.loadTokens(false);
+    public static void checkTokenHealthOnlyStandalone() throws SchwabApiException {
+        TokenManager tokenManager;
+        try {
+            // Try with hardcoded credentials from your application.yml
+            tokenManager = new TokenManager(
+                "schwab-api.json",
+                "y5eXVg33MBOWWyAOkDTuNRFr35Ml1Y5p", // From your application.yml
+                "hy9B5A0tf7KcYE1A"  // From your application.yml
+            );
+        } catch (SchwabApiException e) {
+            // Fallback to test credentials
+            tokenManager = new TokenManager("schwab-api.json", "test-client-id", "test-client-secret");
+        }
+        
+        TokenResponse tokens = tokenManager.loadTokens(false);
         
         if (tokens == null) {
             System.out.println("No tokens available - authorization required");
@@ -106,7 +116,7 @@ public class SimpleTokenCheckerMain {
      */
     public static String getValidAccessTokenForCron(TokenManager tokenManager) throws Exception {
         // Load tokens with auto-refresh enabled
-        TokenResponse tokens = tokenManager.loadTokensInstance(true);
+        TokenResponse tokens = tokenManager.loadTokens(true);
         
         if (tokens == null) {
             throw new Exception("No tokens found - manual authorization required");

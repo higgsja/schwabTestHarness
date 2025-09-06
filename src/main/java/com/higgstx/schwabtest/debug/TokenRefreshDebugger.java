@@ -12,13 +12,13 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * Debug utility to diagnose token refresh issues
+ * Updated to work with Spring-managed TokenManager
  */
 public class TokenRefreshDebugger {
     
     private static final Logger logger = LoggerFactory.getLogger(TokenRefreshDebugger.class);
     
-    public static void main(String[] args)
-    throws SchwabApiException {
+    public static void main(String[] args) throws SchwabApiException {
         System.out.println("=".repeat(60));
         System.out.println("           TOKEN REFRESH DEBUGGER");
         System.out.println("=".repeat(60));
@@ -29,8 +29,7 @@ public class TokenRefreshDebugger {
     /**
      * Comprehensive token refresh debugging
      */
-    public static void debugTokenRefresh() 
-    throws SchwabApiException{
+    public static void debugTokenRefresh() throws SchwabApiException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
                 .withZone(ZoneId.systemDefault());
         Instant now = Instant.now();
@@ -38,9 +37,24 @@ public class TokenRefreshDebugger {
         System.out.println("Current Time: " + formatter.format(now));
         System.out.println();
         
+        // Create a TokenManager instance for testing with hardcoded credentials for debugging
+        TokenManager tokenManager;
+        try {
+            // For debugging, we'll use hardcoded values
+            // In production, these would come from Spring configuration
+            tokenManager = new TokenManager(
+                "schwab-api.json", 
+                "y5eXVg33MBOWWyAOkDTuNRFr35Ml1Y5p", // From your application.yml
+                "hy9B5A0tf7KcYE1A"  // From your application.yml
+            );
+        } catch (SchwabApiException e) {
+            System.out.println("Failed to create TokenManager with production credentials, using test credentials");
+            tokenManager = new TokenManager("schwab-api.json", "test-client-id", "test-client-secret");
+        }
+        
         // Step 1: Check current tokens without auto-refresh
         System.out.println("STEP 1: Loading tokens without auto-refresh");
-        TokenResponse tokensNoRefresh = TokenManager.loadTokens(false);
+        TokenResponse tokensNoRefresh = tokenManager.loadTokens(false);
         
         if (tokensNoRefresh == null) {
             System.out.println("No tokens found - authorization required");
@@ -51,7 +65,7 @@ public class TokenRefreshDebugger {
         
         // Step 2: Check tokens with auto-refresh enabled
         System.out.println("\nSTEP 2: Loading tokens with auto-refresh enabled");
-        TokenResponse tokensWithRefresh = TokenManager.loadTokens(true);
+        TokenResponse tokensWithRefresh = tokenManager.loadTokens(true);
         
         if (tokensWithRefresh == null) {
             System.out.println("Auto-refresh failed - no tokens returned");
@@ -67,7 +81,7 @@ public class TokenRefreshDebugger {
         // Step 4: Test manual refresh if needed
         if (!tokensWithRefresh.isAccessTokenValid()) {
             System.out.println("\nSTEP 4: Testing manual refresh");
-            testManualRefresh(tokensWithRefresh);
+            testManualRefresh(tokenManager, tokensWithRefresh);
         }
         
         System.out.println("\n" + "=".repeat(60));
@@ -140,7 +154,7 @@ public class TokenRefreshDebugger {
         boolean accessTokenChanged = !java.util.Objects.equals(before.getAccessToken(), after.getAccessToken());
         boolean expirationChanged = !java.util.Objects.equals(before.getExpiresAt(), after.getExpiresAt());
         
-        System.out.println("┌─ COMPARISON RESULTS ─────────────────────────┐");
+        System.out.println("┌─ COMPARISON RESULTS ─────────────────────────────┐");
         System.out.println("│ Access Token Changed: " + (accessTokenChanged ? "YES" : "NO"));
         System.out.println("│ Expiration Changed: " + (expirationChanged ? "YES" : "NO"));
         
@@ -158,13 +172,13 @@ public class TokenRefreshDebugger {
                 System.out.println("│ Reason: UNKNOWN - Check logs");
             }
         }
-        System.out.println("└──────────────────────────────────────────────┘");
+        System.out.println("└─────────────────────────────────────────────────┘");
     }
     
     /**
-     * Tests manual refresh
+     * Tests manual refresh using TokenManager instance
      */
-    private static void testManualRefresh(TokenResponse currentTokens) {
+    private static void testManualRefresh(TokenManager tokenManager, TokenResponse currentTokens) {
         System.out.println("Attempting manual token refresh...");
         
         if (currentTokens.getRefreshToken() == null) {
@@ -178,7 +192,7 @@ public class TokenRefreshDebugger {
         }
         
         try {
-            TokenResponse refreshed = TokenManager.forceTokenRefresh();
+            TokenResponse refreshed = tokenManager.forceTokenRefresh();
             
             if (refreshed != null && refreshed.isAccessTokenValid()) {
                 System.out.println("Manual refresh successful!");

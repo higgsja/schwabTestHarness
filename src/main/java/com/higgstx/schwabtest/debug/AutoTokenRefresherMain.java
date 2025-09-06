@@ -35,17 +35,16 @@ public class AutoTokenRefresherMain {
         try {
             TokenManager tokenManager = new TokenManager(
                     testConfig.getTokenPropertiesFile(), 
-                    testConfig.getRefreshTokenFile(),
                     testConfig.getAppKey(), 
                     testConfig.getAppSecret());
 
-            if (!tokenManager.hasRefreshToken()) {
-                System.err.println("ERROR: No refresh token found. Please run the Manual OAuth option (1) first to authorize the application.");
+            if (!tokenManager.hasUsableTokens()) {
+                System.err.println("ERROR: No usable refresh token found. Please run the Manual OAuth option (1) first to authorize the application.");
                 return;
             }
 
             System.out.println("Attempting to refresh tokens...");
-            TokenResponse refreshedTokens = tokenManager.forceTokenRefreshInstance();
+            TokenResponse refreshedTokens = tokenManager.forceTokenRefresh();
             System.out.println("SUCCESS! Tokens refreshed automatically.");
             System.out.println("New access token expires at: " + refreshedTokens.getExpiresAt());
 

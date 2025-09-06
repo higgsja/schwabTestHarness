@@ -474,10 +474,12 @@ public class TestHarnessRunner implements CommandLineRunner {
     }
 
     private void saveTokensAndComplete(TokenResponse tokens) throws SchwabApiException {
-        tokenManager.saveTokensInstance(tokens);
+        // Use the correct method names from TokenManager
+        tokenManager.saveTokens(tokens);
 
         try {
-            Path refreshTokenPath = Paths.get(tokenManager.getRefreshTokenFile());
+            // Write refresh token to file manually since there's no getter for the file path
+            Path refreshTokenPath = Paths.get("schwab-refresh-token.txt");
             Files.writeString(refreshTokenPath, tokens.getRefreshToken());
         } catch (IOException e) {
             logger.error("Failed to write refresh token to file: {}", e.getMessage());
@@ -732,7 +734,7 @@ public class TestHarnessRunner implements CommandLineRunner {
     private void testAutomatedRefresh() throws SchwabApiException {
         System.out.println("\n--- Testing Automated Token Refresh (Forced) ---");
 
-        TokenResponse currentTokens = tokenManager.loadTokensInstance(false);
+        TokenResponse currentTokens = tokenManager.loadTokens(false);
         if (currentTokens == null) {
             throw SchwabApiException.notFound("No tokens found. Please run OAuth authorization first (option 2).");
         }
@@ -746,7 +748,7 @@ public class TestHarnessRunner implements CommandLineRunner {
 
         System.out.println("\nSTEP 2: Forcing token refresh...");
         
-        TokenResponse refreshedTokens = tokenManager.forceTokenRefreshInstance();
+        TokenResponse refreshedTokens = tokenManager.forceTokenRefresh();
         
         System.out.println("SUCCESS: Token refresh completed");
         displayTokenStatus(refreshedTokens);
@@ -775,10 +777,11 @@ public class TestHarnessRunner implements CommandLineRunner {
         System.out.println("  App Secret: " + (config.getAppSecret() != null ? "LOADED" : "MISSING"));
         
         System.out.println("\nToken Files:");
-        System.out.println("  " + tokenManager.getTokenPropertiesFile() + ": " + 
-            (Files.exists(Paths.get(tokenManager.getTokenPropertiesFile())) ? "EXISTS" : "MISSING"));
-        System.out.println("  " + tokenManager.getRefreshTokenFile() + ": " + 
-            (Files.exists(Paths.get(tokenManager.getRefreshTokenFile())) ? "EXISTS" : "MISSING"));
+        System.out.println("  " + tokenManager.getTokenFilePath() + ": " + 
+            (Files.exists(Paths.get(tokenManager.getTokenFilePath())) ? "EXISTS" : "MISSING"));
+        // Hard-coded refresh token file since we don't have a getter
+        System.out.println("  schwab-refresh-token.txt: " + 
+            (Files.exists(Paths.get("schwab-refresh-token.txt")) ? "EXISTS" : "MISSING"));
 
         System.out.println("\nAPI Endpoints:");
         System.out.println("  Auth URL: " + config.getUrls().getAuth());
