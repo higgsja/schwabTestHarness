@@ -92,23 +92,25 @@ public class TestHarnessRunner implements CommandLineRunner {
     }
 
     private void handleApiException(SchwabApiException e) {
-        System.err.println("\nAPI Error Details:");
-        System.err.println("  Message: " + e.getDisplayMessage());
-        System.err.println("  Category: " + e.getErrorCategory().getDescription());
-        System.err.println("  Status Code: " + e.getStatusCode());
-        System.err.println("  Error Code: " + e.getErrorCode());
-        System.err.println("  Recommended Action: " + e.getRecommendedAction());
-        
-        if (e.shouldAlert()) {
-            System.err.println("  Severity: " + e.getSeverity());
-        }
-        
-        if (e.isRetryable()) {
-            System.err.println("  Note: This error is retryable. Wait " + e.getRetryAfterSeconds() + " seconds before retrying.");
-        }
-        
-        logger.error("Menu option failed with API exception", e);
+    System.err.println("\nAPI Error Details:");
+    System.err.println("  Message: " + e.getMessage());
+    System.err.println("  Status Code: " + e.getStatusCode());
+    System.err.println("  Error Code: " + e.getErrorCode());
+    
+    if (e.isRetryable()) {
+        System.err.println("  Note: This error is retryable.");
     }
+    
+    if (e.isAuthError()) {
+        System.err.println("  Note: Authentication error - check credentials.");
+    }
+    
+    if (e.isRateLimited()) {
+        System.err.println("  Note: Rate limited - please wait before retrying.");
+    }
+    
+    logger.error("Menu option failed with API exception", e);
+}
 
     private void handleGenericException(Exception e) {
         System.err.println("An unexpected error occurred: " + e.getMessage());
@@ -172,8 +174,7 @@ public class TestHarnessRunner implements CommandLineRunner {
 
         } catch (SchwabApiException e) {
             System.err.println("API Error during bulk fetch:");
-            System.err.println("  " + e.getDisplayMessage());
-            System.err.println("  Recommended Action: " + e.getRecommendedAction());
+            System.err.println("  " + e.getMessage());
             throw e;
         }
     }
@@ -608,7 +609,7 @@ public class TestHarnessRunner implements CommandLineRunner {
                 System.out.println("Error: " + marketHours.getBody());
             }
         } catch (SchwabApiException e) {
-            System.err.println("Market hours error: " + e.getDisplayMessage());
+            System.err.println("Market hours error: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Market hours test failed: " + e.getMessage());
         }
@@ -632,7 +633,7 @@ public class TestHarnessRunner implements CommandLineRunner {
                     System.out.println("  FAILED - " + quote.getErrorMessage());
                 }
             } catch (SchwabApiException e) {
-                System.err.println("  API ERROR: " + e.getDisplayMessage());
+                System.err.println("  API ERROR: " + e.getMessage());
             }
         }
     }
@@ -653,7 +654,7 @@ public class TestHarnessRunner implements CommandLineRunner {
                 System.out.println("  " + result);
             }
         } catch (SchwabApiException e) {
-            System.err.println("Batch quote error: " + e.getDisplayMessage());
+            System.err.println("Batch quote error: " + e.getMessage());
         }
     }
 
@@ -693,8 +694,7 @@ public class TestHarnessRunner implements CommandLineRunner {
             }
             
         } catch (SchwabApiException e) {
-            System.err.println("Historical data error: " + e.getDisplayMessage());
-            System.err.println("Recommended Action: " + e.getRecommendedAction());
+            System.err.println("Historical data error: " + e.getMessage());
         }
     }
 

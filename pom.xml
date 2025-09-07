@@ -169,27 +169,6 @@
             </build>
         </profile>
         <profile>
-            <id>token-debugger</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <configuration>
-                            <mainClass>com.higgstx.schwabtest.debug.TokenRefreshDebugger</mainClass>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>java</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
             <id>log-viewer</id>
             <build>
                 <plugins>
