@@ -92,25 +92,25 @@ public class TestHarnessRunner implements CommandLineRunner {
     }
 
     private void handleApiException(SchwabApiException e) {
-    System.err.println("\nAPI Error Details:");
-    System.err.println("  Message: " + e.getMessage());
-    System.err.println("  Status Code: " + e.getStatusCode());
-    System.err.println("  Error Code: " + e.getErrorCode());
-    
-    if (e.isRetryable()) {
-        System.err.println("  Note: This error is retryable.");
+        System.err.println("\nAPI Error Details:");
+        System.err.println("  Message: " + e.getMessage());
+        System.err.println("  Status Code: " + e.getStatusCode());
+        System.err.println("  Error Code: " + e.getErrorCode());
+        
+        if (e.isRetryable()) {
+            System.err.println("  Note: This error is retryable.");
+        }
+        
+        if (e.isAuthError()) {
+            System.err.println("  Note: Authentication error - check credentials.");
+        }
+        
+        if (e.isRateLimited()) {
+            System.err.println("  Note: Rate limited - please wait before retrying.");
+        }
+        
+        logger.error("Menu option failed with API exception", e);
     }
-    
-    if (e.isAuthError()) {
-        System.err.println("  Note: Authentication error - check credentials.");
-    }
-    
-    if (e.isRateLimited()) {
-        System.err.println("  Note: Rate limited - please wait before retrying.");
-    }
-    
-    logger.error("Menu option failed with API exception", e);
-}
 
     private void handleGenericException(Exception e) {
         System.err.println("An unexpected error occurred: " + e.getMessage());
@@ -138,8 +138,12 @@ public class TestHarnessRunner implements CommandLineRunner {
         System.out.println("\n--- Testing Bulk Historical Data API ---");
         System.out.println("This test uses the getBulkHistoricalData method to fetch 30 days of data for multiple symbols.");
 
-        if (!marketDataService.ensureServiceReady("testBulkHistoricalData")) {
+        // FIX: Use try-catch instead of expecting boolean return
+        try {
+            marketDataService.ensureServiceReady("testBulkHistoricalData");
+        } catch (SchwabApiException e) {
             System.out.println("Service not ready. Please ensure tokens are valid and try again.");
+            System.out.println("Error: " + e.getMessage());
             return;
         }
 
@@ -436,7 +440,8 @@ public class TestHarnessRunner implements CommandLineRunner {
 
         } catch (Exception e) {
             if (e.getCause() instanceof java.util.concurrent.TimeoutException) {
-                throw SchwabApiException.timeout("Authorization timed out after 5 minutes");
+                // FIX: Use existing factory method instead of non-existent timeout method
+                throw SchwabApiException.serverError("Authorization timed out after 5 minutes");
             }
             throw SchwabApiException.networkError("OAuth authorization", e);
         }
@@ -579,8 +584,12 @@ public class TestHarnessRunner implements CommandLineRunner {
     private void testMarketData() throws SchwabApiException {
         System.out.println("\n--- Testing Market Data API ---");
 
-        if (!marketDataService.ensureServiceReady("testMarketData")) {
+        // FIX: Use try-catch instead of expecting boolean return
+        try {
+            marketDataService.ensureServiceReady("testMarketData");
+        } catch (SchwabApiException e) {
             System.out.println("Service not ready. Please ensure tokens are valid.");
+            System.out.println("Error: " + e.getMessage());
             return;
         }
 
@@ -669,7 +678,12 @@ public class TestHarnessRunner implements CommandLineRunner {
     private void testHistoricalData(Scanner scanner) throws SchwabApiException {
         System.out.println("\n--- Testing Historical Data API ---");
 
-        if (!marketDataService.ensureServiceReady("testHistoricalData")) {
+        // FIX: Use try-catch instead of expecting boolean return
+        try {
+            marketDataService.ensureServiceReady("testHistoricalData");
+        } catch (SchwabApiException e) {
+            System.out.println("Service not ready. Please ensure tokens are valid and try again.");
+            System.out.println("Error: " + e.getMessage());
             return;
         }
 

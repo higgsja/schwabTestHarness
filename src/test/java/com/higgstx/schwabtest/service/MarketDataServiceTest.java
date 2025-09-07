@@ -126,25 +126,32 @@ class MarketDataServiceTest {
             // Then
             assertNotNull(status);
             // Should indicate no tokens or error since we're in test environment
-            assertTrue(status.contains("NO TOKENS") || status.contains("ERROR"));
+            assertTrue(status.contains("NO_TOKENS") || status.contains("ERROR"));
         }
 
         @Test
         @DisplayName("Should attempt service ready check with operation name")
         void shouldAttemptServiceReadyWithOperation() {
-            // When & Then - Should not throw exception even if tokens are missing
-            boolean result = marketDataService.ensureServiceReady("test-operation");
-            // Will be false in test environment without valid tokens
-            assertFalse(result);
+            // When & Then - Should throw SchwabApiException since tokens are missing
+            // Fix: ensureServiceReady returns void and throws exceptions instead of returning boolean
+            assertThrows(SchwabApiException.class, () -> {
+                marketDataService.ensureServiceReady("test-operation");
+            });
         }
 
         @Test
-        @DisplayName("Should attempt service ready check with default operation")
-        void shouldAttemptServiceReadyWithDefaultOperation() {
-            // When & Then - Should not throw exception
-            boolean result = marketDataService.ensureServiceReady();
-            // Will be false in test environment without valid tokens
-            assertFalse(result);
+        @DisplayName("Should handle ensureServiceReady with exception for no tokens")
+        void shouldHandleEnsureServiceReadyException() {
+            // When & Then - ensureServiceReady should throw exception when no valid tokens
+            SchwabApiException exception = assertThrows(SchwabApiException.class, () -> {
+                marketDataService.ensureServiceReady("test-operation");
+            });
+            
+            // Verify the exception contains meaningful information
+            assertNotNull(exception.getMessage());
+            assertTrue(exception.getMessage().contains("token") || 
+                      exception.getMessage().contains("Token") ||
+                      exception.getMessage().toLowerCase().contains("auth"));
         }
     }
 
@@ -212,16 +219,16 @@ class MarketDataServiceTest {
             // Given
             when(mockTokenManager.getValidAccessToken()).thenReturn("fake-token");
 
-            // When & Then - The actual implementation throws IllegalArgumentException for validation
-            assertThrows(IllegalArgumentException.class, () -> {
+            // When & Then - The actual implementation throws SchwabApiException for validation
+            assertThrows(SchwabApiException.class, () -> {
                 serviceWithMock.getPriceHistoryData(null, "month", 1, "daily", 1);
             });
 
-            assertThrows(IllegalArgumentException.class, () -> {
+            assertThrows(SchwabApiException.class, () -> {
                 serviceWithMock.getPriceHistoryData("", "month", 1, "daily", 1);
             });
 
-            assertThrows(IllegalArgumentException.class, () -> {
+            assertThrows(SchwabApiException.class, () -> {
                 serviceWithMock.getPriceHistoryData("   ", "month", 1, "daily", 1);
             });
         }
@@ -240,6 +247,23 @@ class MarketDataServiceTest {
             // Empty array throws SchwabApiException
             assertThrows(SchwabApiException.class, () -> {
                 serviceWithMock.getBulkHistoricalData(new String[0]);
+            });
+        }
+
+        @Test
+        @DisplayName("Should handle ensureServiceReady exceptions in service methods")
+        void shouldHandleEnsureServiceReadyExceptions() throws SchwabApiException {
+            // Given - Mock token manager that throws exception
+            when(mockTokenManager.getValidAccessToken()).thenThrow(
+                SchwabApiException.tokenError("No valid tokens"));
+
+            // When & Then - Service methods should propagate the token exception
+            assertThrows(SchwabApiException.class, () -> {
+                serviceWithMock.getQuote("AAPL");
+            });
+
+            assertThrows(SchwabApiException.class, () -> {
+                serviceWithMock.getPriceHistoryData("AAPL", "month", 1, "daily", 1);
             });
         }
     }
@@ -366,10 +390,14 @@ class MarketDataServiceTest {
 
             MarketDataService serviceWithFailingTokenManager = new MarketDataService(testProperties, mockTokenManager);
 
-            // When & Then - Service should handle token manager errors
-            assertThrows(RuntimeException.class, () -> {
+            // When & Then - Service should wrap token manager errors in SchwabApiException
+            SchwabApiException exception = assertThrows(SchwabApiException.class, () -> {
                 serviceWithFailingTokenManager.getQuote("AAPL");
             });
+            
+            // Verify the original error message is preserved
+            assertTrue(exception.getMessage().contains("Token manager error"));
+            assertTrue(exception.getMessage().contains("Failed to get quotes"));
 
             serviceWithFailingTokenManager.close();
         }
@@ -384,10 +412,43 @@ class MarketDataServiceTest {
             assertNotNull(tokenStatus);
             // Should contain meaningful status information
             assertTrue(tokenStatus.length() > 0);
-            assertTrue(tokenStatus.contains("NO TOKENS") || 
+            assertTrue(tokenStatus.contains("NO_TOKENS") || 
                       tokenStatus.contains("ERROR") || 
                       tokenStatus.contains("VALID") ||
                       tokenStatus.contains("EXPIRED"));
+        }
+
+        @Test
+        @DisplayName("Should handle ensureServiceReady method signature correctly")
+        void shouldHandleEnsureServiceReadyMethodSignature() {
+            // When & Then - Test that ensureServiceReady requires operation parameter
+            assertThrows(SchwabApiException.class, () -> {
+                marketDataService.ensureServiceReady("test-operation");
+            });
+
+            // Verify the method exists and accepts String parameter
+            assertDoesNotThrow(() -> {
+                try {
+                    marketDataService.ensureServiceReady("another-test-operation");
+                } catch (SchwabApiException e) {
+                    // Expected - tokens not available in test environment
+                }
+            });
+        }
+
+        @Test
+        @DisplayName("Should validate ensureServiceReady parameter requirements")
+        void shouldValidateEnsureServiceReadyParameterRequirements() {
+            // When & Then - Verify method requires operation name parameter
+            // This will throw SchwabApiException due to missing tokens, not due to missing parameters
+            SchwabApiException exception = assertThrows(SchwabApiException.class, () -> {
+                marketDataService.ensureServiceReady("validation-test");
+            });
+
+            // The exception should be about tokens, not about method signature
+            String message = exception.getMessage().toLowerCase();
+            assertTrue(message.contains("token") || message.contains("auth") || 
+                      message.contains("refresh") || message.contains("valid"));
         }
     }
 }
