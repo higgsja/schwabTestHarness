@@ -16,8 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for MarketDataService
- * Updated to use Spring-managed configuration
+ * Unit tests for MarketDataService - Updated for single constructor design
  */
 class MarketDataServiceTest {
 
@@ -133,7 +132,6 @@ class MarketDataServiceTest {
         @DisplayName("Should attempt service ready check with operation name")
         void shouldAttemptServiceReadyWithOperation() {
             // When & Then - Should throw SchwabApiException since tokens are missing
-            // Fix: ensureServiceReady returns void and throws exceptions instead of returning boolean
             assertThrows(SchwabApiException.class, () -> {
                 marketDataService.ensureServiceReady("test-operation");
             });
@@ -163,7 +161,7 @@ class MarketDataServiceTest {
 
         @BeforeEach
         void setUpMock() throws SchwabApiException {
-            // Create service with mock token manager for controlled testing
+            // Use the single constructor - no factory method needed
             serviceWithMock = new MarketDataService(testProperties, mockTokenManager);
         }
 
@@ -388,6 +386,7 @@ class MarketDataServiceTest {
             when(mockTokenManager.getValidAccessToken()).thenThrow(
                 new RuntimeException("Token manager error"));
 
+            // Use the single constructor - this is line 167 that was causing the error
             MarketDataService serviceWithFailingTokenManager = new MarketDataService(testProperties, mockTokenManager);
 
             // When & Then - Service should wrap token manager errors in SchwabApiException
