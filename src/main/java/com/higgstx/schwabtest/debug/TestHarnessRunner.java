@@ -501,9 +501,22 @@ public class TestHarnessRunner implements CommandLineRunner
     {
         System.out.println("\nTesting server accessibility...");
         System.out.println(
+                "Opening browser to test the HTTPS server...");
+        System.out.println(
                 "You'll see a browser security warning - this is expected for self-signed certificates.");
         System.out.println(
                 "Click 'Advanced' then 'Proceed to 127.0.0.1 (unsafe)' to continue.");
+
+        // Actually open the browser to test the server
+        if (openBrowser(redirectUri))
+        {
+            System.out.println("Browser opened to: " + redirectUri);
+        }
+        else
+        {
+            System.out.println("Could not open browser automatically.");
+            System.out.println("Please manually open this URL in your browser: " + redirectUri);
+        }
 
         System.out.print(
                 "\nDid the test page load successfully after bypassing the warning? (y/n): ");
