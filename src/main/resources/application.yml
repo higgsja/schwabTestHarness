@@ -1,8 +1,8 @@
 # Test Harness Configuration - Only credentials
 schwab:
   api:
-    appKey: "y5eXVg33MBOWWyAOkDTuNRFr35Ml1Y5p"
-    appSecret: "hy9B5A0tf7KcYE1A"
+    appKey: "yourAppKey"
+    appSecret: "yourAppSecret"
     tokenPropertiesFile: "schwab-api.json"
     refreshTokenFile: "schwab-refresh-token.txt"
     urls:
