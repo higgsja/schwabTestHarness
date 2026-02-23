@@ -2,8 +2,8 @@
 schwab:
   api:
     # Your Schwab API credentials - REPLACE WITH YOUR ACTUAL VALUES
-    appKey: "y5eXVg33MBOWWyAOkDTuNRFr35Ml1Y5p"
-    appSecret: "hy9B5A0tf7KcYE1A"
+    appKey: "yourAppKey"
+    appSecret: "yourAppSecret"
     callbackUrl: "https://127.0.0.1"  # EXACT URI - no port allowed
 
 # Spring Boot Configuration
